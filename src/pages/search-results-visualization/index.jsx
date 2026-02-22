@@ -21,11 +21,11 @@ const SearchResultsVisualization = () => {
     // Get query image from location state or fall back to mock
     const passedQueryImage = location.state?.queryImage;
     const queryImage = passedQueryImage || {
-        image: "https://images.unsplash.com/photo-1612148504769-b4557159bea7",
-        imageAlt: "Modern luxury sports car in metallic silver with sleek aerodynamic design",
-        filename: "query_sports_car.jpg",
+        image: "https://images.unsplash.com/photo-1550684848-fac1c5b4e853?auto=format&fit=crop&w=800&q=80",
+        imageAlt: "Abstract visual pattern for feature analysis",
+        filename: "default_query.jpg",
         dimensions: "1920x1080",
-        keypoints: 847,
+        keypoints: 1000,
         processingTime: "1.24s",
         algorithm: "ORB"
     };
