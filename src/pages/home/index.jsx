@@ -912,3 +912,5 @@ function SectionHeader({ number, title, sub, accent }) {
         </div>
     );
 }
+
+export default HomePage;
