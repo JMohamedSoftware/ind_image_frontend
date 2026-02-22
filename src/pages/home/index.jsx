@@ -210,8 +210,75 @@ function Dots({ score, color }) {
     );
 }
 
+// ─── INDEXING OVERLAY ────────────────────────────────────────────────────────
+function IndexingOverlay({ algo, stepIndex }) {
+    if (stepIndex < 0) return null;
+
+    return (
+        <div className="absolute inset-0 pointer-events-none overflow-hidden rounded-xl">
+            {/* Step 1: Preprocessing (Scanning Line) */}
+            {stepIndex === 1 && (
+                <div className="absolute top-0 left-0 w-full h-1 bg-blue-400 opacity-60 shadow-[0_0_10px_#60a5fa] animate-scan" />
+            )}
+
+            {/* Step 2: Feature Extraction */}
+            {stepIndex >= 2 && (
+                <div className="absolute inset-0">
+                    {['ORB', 'SIFT', 'AKAZE'].includes(algo.id) && (
+                        <div className="relative w-full h-full">
+                            {[...Array(8)].map((_, i) => (
+                                <div key={i} className="absolute w-1.5 h-1.5 rounded-full animate-ping"
+                                    style={{
+                                        left: `${15 + Math.random() * 70}%`,
+                                        top: `${15 + Math.random() * 70}%`,
+                                        background: algo.accent,
+                                        animationDelay: `${i * 200}ms`,
+                                        opacity: stepIndex === 2 ? 0.8 : 0.4
+                                    }} />
+                            ))}
+                        </div>
+                    )}
+                    {algo.id === 'HOG' && (
+                        <div className="grid grid-cols-4 grid-rows-4 h-full w-full opacity-60 p-1">
+                            {[...Array(16)].map((_, i) => (
+                                <div key={i} className="border border-white/10 flex items-center justify-center">
+                                    <div className="w-4 h-0.5 bg-green-400" style={{ transform: `rotate(${Math.random() * 180}deg)` }} />
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                    {algo.id === 'CNN' && (
+                        <div className="grid grid-cols-5 grid-rows-5 h-full w-full opacity-30 p-1">
+                            {[...Array(25)].map((_, i) => (
+                                <div key={i} className="rounded-sm" style={{ background: `rgba(37, 99, 235, ${Math.random()})` }} />
+                            ))}
+                        </div>
+                    )}
+                    {(algo.id === 'MEANSHIFT' || algo.id === 'K-MEANS') && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-full h-full bg-orange-400/10 backdrop-blur-[0.5px] grid grid-cols-2 grid-rows-2 gap-0.5 p-1">
+                                {[...Array(4)].map((_, i) => (
+                                    <div key={i} className="bg-orange-400/40 rounded-sm" />
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            )}
+
+            {/* Step 3: Descriptor Generation (Pulse) */}
+            {stepIndex === 3 && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-full h-full animate-pulse border-4" style={{ borderColor: algo.accent + '40' }} />
+                </div>
+            )}
+        </div>
+    );
+}
+
 // ─── INDEXED IMAGE WITH LIVE LOG ─────────────────────────────────────────────
 function IndexedCard({ image, algo }) {
+    const [stepIndex, setStepIndex] = useState(-1);
     const [steps, setSteps] = useState([
         { text: 'Received image file', detail: null, status: 'pending' },
         { text: 'Preprocessing', detail: null, status: 'pending' },
@@ -220,13 +287,15 @@ function IndexedCard({ image, algo }) {
         { text: 'Store in index', detail: null, status: 'pending' },
     ]);
 
-    const update = (i, status, detail) =>
+    const update = (i, status, detail) => {
+        setStepIndex(i);
         setSteps(prev => prev.map((s, idx) => idx === i ? { ...s, status, detail: detail ?? s.detail } : s));
+    };
 
     useEffect(() => {
         update(0, 'running');
         const t0 = setTimeout(() => { update(0, 'done', `File: ${image.name}`); update(1, 'running'); }, 300);
-        const t1 = setTimeout(() => { update(1, 'done', 'Image converted to internal format & resized if needed.'); update(2, 'running'); }, 900);
+        const t1 = setTimeout(() => { update(1, 'done', 'Image converted to internal format & resized.'); update(2, 'running'); }, 1200);
         const t2 = setTimeout(() => {
             const isKeypoint = ['ORB', 'SIFT', 'AKAZE'].includes(algo.id);
             update(2, 'done',
@@ -235,26 +304,30 @@ function IndexedCard({ image, algo }) {
                     : `${algo.detectorDetail}`
             );
             update(3, 'running');
-        }, 1600);
+        }, 2400);
         const t3 = setTimeout(() => {
             const isKeypoint = ['ORB', 'SIFT', 'AKAZE'].includes(algo.id);
             update(3, 'done',
                 isKeypoint
-                    ? `${algo.descriptorDetail} → ${image.keypoints} descriptors × ${algo.descriptorSize}`
+                    ? `${algo.descriptorDetail} → ${image.keypoints} descriptors`
                     : algo.descriptorDetail
             );
             update(4, 'running');
-        }, 2400);
+        }, 3600);
         const t4 = setTimeout(() => {
             update(4, 'done', `Index updated with ${algo.name} features.`);
-        }, 3000);
+            setStepIndex(-1);
+        }, 4500);
         return () => [t0, t1, t2, t3, t4].forEach(clearTimeout);
     }, [image.keypoints, algo]);
 
     return (
         <div className="rounded-2xl border bg-white shadow-sm overflow-hidden" style={{ borderColor: algo.border }}>
             <div className="flex gap-4 p-4">
-                <img src={image.preview} alt={image.name} className="w-20 h-20 rounded-xl object-cover shrink-0 border" style={{ borderColor: algo.border }} />
+                <div className="relative w-20 h-20 shrink-0">
+                    <img src={image.preview} alt={image.name} className="w-full h-full rounded-xl object-cover border" style={{ borderColor: algo.border }} />
+                    <IndexingOverlay algo={algo} stepIndex={stepIndex} />
+                </div>
                 <div className="min-w-0 flex-1">
                     <p className="text-xs font-bold text-gray-500 truncate mb-3">{image.name}</p>
                     <LiveLog steps={steps} />

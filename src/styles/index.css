@@ -10,3 +10,21 @@ body {
     font-family: inherit;
     margin: unset;
 }
+
+@keyframes scan {
+    0% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(5rem);
+    }
+
+    100% {
+        transform: translateY(0);
+    }
+}
+
+.animate-scan {
+    animation: scan 1.5s ease-in-out infinite;
+}
