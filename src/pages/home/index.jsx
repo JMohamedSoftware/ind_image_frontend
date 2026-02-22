@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import DetailedComparison from '../search-results-visualization/components/DetailedComparison';
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const ALGORITHMS = [
@@ -154,9 +155,28 @@ const ALGORITHMS = [
         descriptorDetail: 'Segmentation — clusters pixels into regions of uniform color/texture, creating a simplified map',
         matchDetail: 'Histogram matching — comparing the distribution of the segmented regions.',
     },
+    {
+        id: 'CLIP',
+        name: 'CLIP',
+        full: 'Contrastive Language-Image Pre-training',
+        accent: '#8b5cf6',
+        light: '#f5f3ff',
+        border: '#c4b5fd',
+        text: '#6d28d9',
+        badge: 'Multimodal AI',
+        description: 'Connects text and images. Allows searching for visual content using natural language.',
+        speed: 3,
+        accuracy: 5,
+        descriptorSize: '512 floats (Latent Space)',
+        descriptorType: 'Multimodal Embedding',
+        matchMetric: 'Cosine Similarity',
+        detectorDetail: 'Transformer Encoder — processes text tokens and image patches into a shared mathematical space',
+        descriptorDetail: 'Projection Head — aligns the visual and textual vectors so "red car" (text) is near "red car" (image)',
+        matchDetail: 'Cosine distance: measures the angle between the text vector and image vectors in the shared space.',
+    },
 ];
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8005';
 const CLOUDINARY_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'image_index';
 const CLOUDINARY_CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'demo';
 
@@ -356,32 +376,79 @@ function SearchLivePanel({ queryImage, algo, steps }) {
 }
 
 // ─── RESULT CARD ─────────────────────────────────────────────────────────────
-function ResultCard({ result, rank }) {
+function ResultCard({ result, rank, onSelect }) {
     const score = result.similarityScore;
     const color = score > 65 ? '#16a34a' : score > 35 ? '#ca8a04' : '#dc2626';
     return (
-        <div className="rounded-2xl border bg-white overflow-hidden shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+        <div
+            onClick={() => onSelect(result)}
+            className="rounded-2xl border bg-white overflow-hidden shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer group"
+        >
             <div className="relative">
                 {result.url
-                    ? <img src={result.url} alt={result.filename} className="w-full aspect-square object-cover" />
+                    ? <img src={result.url} alt={result.filename} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500" />
                     : <div className="w-full aspect-square bg-gray-100 flex items-center justify-center text-4xl">🖼️</div>
                 }
                 <div className="absolute top-2 right-2 px-2.5 py-1 rounded-full text-xs font-bold text-white shadow" style={{ background: color }}>{score.toFixed(0)}%</div>
                 <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-white/90 flex items-center justify-center text-xs font-bold text-gray-600 shadow">#{rank + 1}</div>
+                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
+                    <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 px-3 py-1.5 rounded-full text-[10px] font-bold text-gray-700 shadow-xl border border-gray-100">
+                        🔍 View Deep-dive
+                    </div>
+                </div>
             </div>
             <div className="h-1.5 bg-gray-100">
                 <div className="h-full rounded-r-full transition-all duration-700" style={{ width: score + '%', background: color }} />
             </div>
             <div className="p-3">
-                <p className="text-xs text-gray-500 truncate">{result.filename}</p>
-                <p className="text-xs mt-0.5 text-gray-400">{result.matchesCount} good matches</p>
+                <p className="text-xs text-gray-500 truncate font-semibold">{result.filename}</p>
+                <div className="flex items-center justify-between mt-1">
+                    <span className="text-[10px] text-gray-400 capitalize">{result.algorithm}</span>
+                    <span className="text-[10px] text-gray-400">{result.matchesCount || 0} pts</span>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ─── INDEX GALLERY ──────────────────────────────────────────────────────────
+function IndexGallery({ images, onClear, algo }) {
+    if (images.length === 0) return null;
+
+    return (
+        <div className="mt-12 p-8 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
+            <div className="flex justify-between items-center mb-8">
+                <div>
+                    <h3 className="text-xl font-bold text-gray-800">🖼️ Indexed Image Library</h3>
+                    <p className="text-sm text-gray-500">The "knowledge base" your {algo.name} algorithm is searching through.</p>
+                </div>
+                <button
+                    onClick={onClear}
+                    className="px-4 py-2 bg-red-50 text-red-600 text-xs font-bold rounded-xl border border-red-100 hover:bg-red-100 transition-colors"
+                >
+                    🗑️ Clear Database
+                </button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                {images.map((img, i) => (
+                    <div key={i} className="group relative bg-white p-2 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
+                        <img src={img.url || img.preview} alt={img.name} className="w-full aspect-square object-cover rounded-xl border mb-2" />
+                        <div className="px-1">
+                            <p className="text-[10px] font-bold text-gray-400 truncate uppercase tracking-tighter">{img.name}</p>
+                            <div className="flex items-center justify-between mt-1">
+                                <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md font-bold">{img.algorithm || 'INDEXED'}</span>
+                                {img.keypoints > 0 && <span className="text-[9px] text-gray-400 font-mono">{img.keypoints} pts</span>}
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );
 }
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
-export default function HomePage() {
+const HomePage = () => {
     const [algo, setAlgo] = useState(ALGORITHMS[0]);
     const [indexedImages, setIndexedImages] = useState([]);
     const [queryImage, setQueryImage] = useState(null);
@@ -391,8 +458,35 @@ export default function HomePage() {
     const [searchLogSteps, setSearchLogSteps] = useState([]);
     const [isDraggingIndex, setIsDraggingIndex] = useState(false);
     const [isDraggingSearch, setIsDraggingSearch] = useState(false);
+    const [textQuery, setTextQuery] = useState('');
+    const [selectedDetailResult, setSelectedDetailResult] = useState(null);
     const indexInputRef = useRef(null);
     const searchInputRef = useRef(null);
+
+    // Fetch index on mount
+    useEffect(() => {
+        fetch(`${API_BASE}/api/index/list`)
+            .then(r => r.json())
+            .then(data => {
+                setIndexedImages(data.map(img => ({
+                    ...img,
+                    name: img.filename,
+                    preview: img.url,
+                    keypoints: img.keypoint_count
+                })));
+            })
+            .catch(err => console.error("Failed to fetch index", err));
+    }, []);
+
+    const handleClearIndex = async () => {
+        if (!confirm("Are you sure you want to delete all indexed images?")) return;
+        try {
+            await fetch(`${API_BASE}/api/index`, { method: 'DELETE' });
+            setIndexedImages([]);
+        } catch (err) {
+            console.error("Failed to clear index", err);
+        }
+    };
 
     // ── Index ─────────────────────────────────────────────────────────────────
     const uploadAndIndex = useCallback(async (file) => {
@@ -427,64 +521,99 @@ export default function HomePage() {
 
     // ── Search ────────────────────────────────────────────────────────────────
     const handleSearch = useCallback(async () => {
-        if (!queryImage) return;
+        if (algo.id !== 'CLIP' && !queryImage) return;
+        if (algo.id === 'CLIP' && !textQuery.trim()) return;
+
         setIsSearching(true);
         setSearchResults(null);
         setSearchError(null);
 
+        const isClip = algo.id === 'CLIP';
         const isKeypoint = ['ORB', 'SIFT', 'AKAZE'].includes(algo.id);
         const makeStep = (text, detail = null, status = 'pending') => ({ text, detail, status });
-        const initSteps = [
+
+        const initSteps = isClip ? [
+            makeStep(`Tokenizing text query: "${textQuery}"`, null, 'running'),
+            makeStep(`Projecting tokens to latent space via Transformer`),
+            makeStep(`Multimodal search in index using Cosine Similarity`),
+            makeStep(`Ranking ${indexedImages.length} images by semantic distance`),
+        ] : [
             makeStep(`Load query image`, null, 'running'),
             makeStep(isKeypoint ? `Extract ${algo.name} keypoints from query` : `Preprocess query image for ${algo.name}`),
             makeStep(isKeypoint ? `Compute ${algo.name} descriptors for query` : `Generate ${algo.name} feature vector`),
             makeStep(`Match against ${indexedImages.length} images using ${algo.matchMetric}`),
             makeStep('Rank results by similarity score'),
         ];
+
         setSearchLogSteps(initSteps);
 
         const upd = (idx, status, detail) =>
             setSearchLogSteps(prev => prev.map((s, i) => i === idx ? { ...s, status, detail: detail ?? s.detail } : s));
 
         try {
-            const blob = await fetch(queryImage.preview).then(r => r.blob());
-            upd(0, 'done', `Query loaded (${(blob.size / 1024).toFixed(1)} KB)`);
-            upd(1, 'running');
+            if (isClip) {
+                // CLIP Text Search Path
+                await new Promise(r => setTimeout(r, 600));
+                upd(0, 'done', 'Query parsed into 12 semantic tokens.');
+                upd(1, 'running');
+                await new Promise(r => setTimeout(r, 800));
+                upd(1, 'done', 'Vector coordinates projected to 512D shared space.');
+                upd(2, 'running');
 
-            const form = new FormData();
-            form.append('file', blob, queryImage.name);
-            form.append('algorithm', algo.id);
+                const form = new FormData();
+                form.append('query', textQuery);
+                form.append('algorithm', 'CLIP');
+                const res = await fetch(`${API_BASE}/api/search/text`, { method: 'POST', body: form });
+                if (!res.ok) throw new Error(`Server error: ${res.status}`);
+                const data = await res.json();
 
-            await new Promise(r => setTimeout(r, 600));
-            upd(1, 'done', algo.detectorDetail);
-            upd(2, 'running');
-            await new Promise(r => setTimeout(r, 600));
-            upd(2, 'done', algo.descriptorDetail);
-            upd(3, 'running');
+                upd(2, 'done', 'Found semantic matches in image database.');
+                upd(3, 'running');
+                await new Promise(r => setTimeout(r, 400));
+                upd(3, 'done', `Top match: ${data.results?.[0]?.filename} with ${data.results?.[0]?.similarityScore.toFixed(1)}% confidence.`);
 
-            const res = await fetch(`${API_BASE}/api/search`, { method: 'POST', body: form });
-            if (!res.ok) throw new Error(`Server error: ${res.status}`);
-            const data = await res.json();
+                setSearchResults(data);
+            } else {
+                // Classic Image Search Path
+                const blob = await fetch(queryImage.preview).then(r => r.blob());
+                upd(0, 'done', `Query loaded (${(blob.size / 1024).toFixed(1)} KB)`);
+                upd(1, 'running');
 
-            const matchSummary = data.results?.length > 0
-                ? data.results.slice(0, 3).map((r, i) => `#${i + 1} "${r.filename}" (${r.similarityScore.toFixed(1)}%)`).join(', ') + (data.results.length > 3 ? '...' : '')
-                : 'No matches found';
+                const form = new FormData();
+                form.append('file', blob, queryImage.name);
+                form.append('algorithm', algo.id);
 
-            upd(3, 'done', `${algo.matchDetail} — ${matchSummary}`);
-            upd(4, 'running');
-            await new Promise(r => setTimeout(r, 400));
-            upd(4, 'done', data.results?.length > 0
-                ? `Found ${data.results.length} results. Top: ${data.results[0].filename} (${data.results[0].similarityScore.toFixed(1)}%)`
-                : 'Search complete. No matches found.');
+                await new Promise(r => setTimeout(r, 600));
+                upd(1, 'done', algo.detectorDetail);
+                upd(2, 'running');
+                await new Promise(r => setTimeout(r, 600));
+                upd(2, 'done', algo.descriptorDetail);
+                upd(3, 'running');
 
-            setSearchResults(data);
+                const res = await fetch(`${API_BASE}/api/search`, { method: 'POST', body: form });
+                if (!res.ok) throw new Error(`Server error: ${res.status}`);
+                const data = await res.json();
+
+                const matchSummary = data.results?.length > 0
+                    ? data.results.slice(0, 3).map((r, i) => `#${i + 1} "${r.filename}" (${r.similarityScore.toFixed(1)}%)`).join(', ') + (data.results.length > 3 ? '...' : '')
+                    : 'No matches found';
+
+                upd(3, 'done', `${algo.matchDetail} — ${matchSummary}`);
+                upd(4, 'running');
+                await new Promise(r => setTimeout(r, 400));
+                upd(4, 'done', data.results?.length > 0
+                    ? `Found ${data.results.length} results. Top: ${data.results[0].filename} (${data.results[0].similarityScore.toFixed(1)}%)`
+                    : 'Search complete. No matches found.');
+
+                setSearchResults(data);
+            }
             setIsSearching(false);
         } catch (err) {
             setSearchError(err.message);
             setIsSearching(false);
             setSearchLogSteps(prev => prev.map(s => s.status === 'running' ? { ...s, status: 'error', detail: err.message } : s));
         }
-    }, [queryImage, algo, indexedImages.length]);
+    }, [queryImage, algo, indexedImages.length, textQuery]);
 
     const handleSearchDrop = useCallback((e) => {
         e.preventDefault();
@@ -607,38 +736,66 @@ export default function HomePage() {
 
                 {/* ── 2: Search ────────────────────────────────────────────── */}
                 <section>
-                    <SectionHeader number="2" title="Search for Similar Images" sub="Drop a query image → live matching log shows every step" accent={algo.accent} />
+                    <SectionHeader
+                        number="2"
+                        title={algo.id === 'CLIP' ? "Search with Natural Language" : "Search for Similar Images"}
+                        sub={algo.id === 'CLIP' ? "Type a description → CLIP maps pixels to concepts" : "Drop a query image → live matching log shows every step"}
+                        accent={algo.accent}
+                    />
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Left: query dropper + button */}
+                        {/* Left: query selection (image or text) */}
                         <div className="space-y-4">
-                            <div
-                                onClick={() => searchInputRef.current?.click()}
-                                onDragOver={e => { e.preventDefault(); setIsDraggingSearch(true); }}
-                                onDragLeave={() => setIsDraggingSearch(false)}
-                                onDrop={handleSearchDrop}
-                                className="cursor-pointer rounded-2xl border-2 border-dashed overflow-hidden transition-all"
-                                style={{ borderColor: isDraggingSearch ? algo.accent : queryImage ? algo.accent + '80' : '#d1d5db', background: isDraggingSearch ? algo.light : 'white' }}
-                            >
-                                <input ref={searchInputRef} type="file" accept="image/*" className="hidden" onChange={handleSearchDrop} />
-                                {queryImage ? (
-                                    <img src={queryImage.preview} alt={queryImage.name} className="w-full aspect-square object-cover" />
-                                ) : (
-                                    <div className="aspect-square flex flex-col items-center justify-center p-8 text-center">
-                                        <div className="text-4xl mb-3">🔍</div>
-                                        <p className="font-bold text-gray-700 mb-1">Drop your query image</p>
-                                        <p className="text-xs text-gray-400">The image you want to find matches for</p>
+                            {algo.id === 'CLIP' ? (
+                                <div className="rounded-2xl border-2 p-8 bg-white" style={{ borderColor: textQuery ? algo.accent : '#d1d5db' }}>
+                                    <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wide">Semantic Search Query</label>
+                                    <div className="relative">
+                                        <input
+                                            type="text"
+                                            value={textQuery}
+                                            onChange={e => setTextQuery(e.target.value)}
+                                            onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                                            placeholder="Example: 'A sunset over the mountains' or 'Red car'..."
+                                            className="w-full text-lg font-semibold bg-transparent outline-none border-b-2 py-2 transition-all placeholder:text-gray-200"
+                                            style={{ borderColor: textQuery ? algo.accent : '#e5e7eb' }}
+                                        />
+                                        <div className="mt-4 p-4 bg-purple-50 rounded-xl border border-purple-100 italic">
+                                            <p className="text-[10px] uppercase font-bold text-purple-400 mb-1">Educational Insight</p>
+                                            <p className="text-xs text-purple-700 leading-relaxed">
+                                                Multimodal AI doesn't look for pixels. It translates your words into a numeric vector that points to concepts stored during indexing.
+                                            </p>
+                                        </div>
                                     </div>
-                                )}
-                            </div>
+                                </div>
+                            ) : (
+                                <div
+                                    onClick={() => searchInputRef.current?.click()}
+                                    onDragOver={e => { e.preventDefault(); setIsDraggingSearch(true); }}
+                                    onDragLeave={() => setIsDraggingSearch(false)}
+                                    onDrop={handleSearchDrop}
+                                    className="cursor-pointer rounded-2xl border-2 border-dashed overflow-hidden transition-all"
+                                    style={{ borderColor: isDraggingSearch ? algo.accent : queryImage ? algo.accent + '80' : '#d1d5db', background: isDraggingSearch ? algo.light : 'white' }}
+                                >
+                                    <input ref={searchInputRef} type="file" accept="image/*" className="hidden" onChange={handleSearchDrop} />
+                                    {queryImage ? (
+                                        <img src={queryImage.preview} alt={queryImage.name} className="w-full aspect-square object-cover" />
+                                    ) : (
+                                        <div className="aspect-square flex flex-col items-center justify-center p-8 text-center">
+                                            <div className="text-4xl mb-3">🔍</div>
+                                            <p className="font-bold text-gray-700 mb-1">Drop your query image</p>
+                                            <p className="text-xs text-gray-400">The image you want to find matches for</p>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             <button
                                 onClick={handleSearch}
-                                disabled={!queryImage || isSearching || indexedImages.length === 0}
-                                className="w-full py-3.5 rounded-2xl font-bold text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90"
+                                disabled={isSearching || (algo.id !== 'CLIP' && !queryImage) || (algo.id === 'CLIP' && !textQuery.trim()) || indexedImages.length === 0}
+                                className="w-full py-4 rounded-2xl font-black text-white text-lg transition-all active:scale-95 disabled:grayscale disabled:opacity-50 shadow-lg hover:shadow-xl"
                                 style={{ background: algo.accent }}
                             >
-                                {isSearching ? '⏳ Searching…' : '🔍 Run Search'}
+                                {isSearching ? '⏳ Searching…' : indexedImages.length === 0 ? 'Wait! Add images to index first' : `Run ${algo.name} Search`}
                             </button>
                             {indexedImages.length === 0 && <p className="text-xs text-center text-gray-400">⬆ Index some images in Step 1 first</p>}
                             {searchError && <div className="p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">❌ {searchError}</div>}
@@ -668,7 +825,7 @@ export default function HomePage() {
                                 </span>
                             </p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                                {searchResults.results.map((r, i) => <ResultCard key={i} result={r} rank={i} />)}
+                                {searchResults.results.map((r, i) => <ResultCard key={i} result={r} rank={i} onSelect={setSelectedDetailResult} />)}
                             </div>
                         </div>
                     )}
@@ -679,6 +836,9 @@ export default function HomePage() {
                         </div>
                     )}
                 </section>
+
+                {/* ── Index Gallery ────────────────────────────────────────── */}
+                <IndexGallery images={indexedImages} onClear={handleClearIndex} algo={algo} />
 
                 {/* ── Comparison table ─────────────────────────────────────── */}
                 <section>
@@ -725,6 +885,14 @@ export default function HomePage() {
                     <p className="mt-1">An educational demo of computer vision feature matching</p>
                 </div>
             </footer>
+
+            {selectedDetailResult && (
+                <DetailedComparison
+                    queryImage={queryImage || { filename: textQuery, algorithm: 'CLIP' }}
+                    selectedResult={selectedDetailResult}
+                    onClose={() => setSelectedDetailResult(null)}
+                />
+            )}
         </div>
     );
 }

@@ -36,6 +36,10 @@ const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
             baseTabs.push({ id: 'svm', label: 'Decision Analysis', icon: 'Divide' });
         }
 
+        if (algorithm === 'CLIP') {
+            baseTabs.push({ id: 'clip', label: 'Semantic Mapping', icon: 'Globe' });
+        }
+
         baseTabs.push({ id: 'histogram', label: 'Color Statistics', icon: 'BarChart2' });
         return baseTabs;
     };
@@ -372,6 +376,23 @@ const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
             <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
                 <p className="text-sm italic text-muted-foreground">CNNs transform raw pixels into semantic embeddings. The activations above represent how the network "sees" specific patterns like edges, textures, and object parts.</p>
             </div>
+
+            <div className="space-y-4">
+                <h4 className="font-bold text-sm uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+                    <Icon name="Search" size={14} /> Semantic Concepts Detected
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                    {['Structural Essence', 'Texture Pattern', 'Object Geometry', 'Semantic Embedding'].map(tag => (
+                        <div key={tag} className="px-3 py-1 bg-primary/10 text-primary text-xs font-bold rounded-full border border-primary/20">
+                            {tag}
+                        </div>
+                    ))}
+                    <div className="px-3 py-1 bg-green-100 text-green-700 text-xs font-bold rounded-full border border-green-200 animate-pulse">
+                        Match Found
+                    </div>
+                </div>
+                <p className="text-xs text-muted-foreground">Unlike keypoints, Deep Learning "labels" the content of the image mathematically to find matches.</p>
+            </div>
         </div>
     );
 
@@ -404,6 +425,73 @@ const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
         </div>
     );
 
+    const renderCLIP = () => {
+        return (
+            <div className="space-y-8">
+                <h3 className="text-xl font-bold flex items-center gap-2 text-gray-900 leading-none">
+                    <Icon name="Globe" className="text-purple-500" />
+                    Multimodal Semantic Mapping
+                </h3>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    {/* Semantic Space Visualization */}
+                    <div className="relative aspect-square bg-slate-900 rounded-3xl border-4 border-slate-800 overflow-hidden shadow-2xl">
+                        <div className="absolute inset-0 opacity-20" style={{
+                            backgroundImage: 'radial-gradient(circle at 2px 2px, #475569 1px, transparent 0)',
+                            backgroundSize: '24px 24px'
+                        }} />
+
+                        <div className="absolute bottom-4 left-4 flex flex-col gap-2 z-10">
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-purple-500 shadow-[0_0_10px_#a855f7]" />
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Query Word</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-3 h-3 rounded-full bg-blue-400 shadow-[0_0_10px_#60a5fa]" />
+                                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Indexed Image</span>
+                            </div>
+                        </div>
+
+                        <svg className="absolute inset-0 w-full h-full pointer-events-none">
+                            <line x1="50%" y1="50%" x2="70%" y2="40%" stroke="rgba(168, 85, 247, 0.3)" strokeWidth="2" strokeDasharray="4 4" />
+                        </svg>
+
+                        <div className="absolute top-[40%] left-[70%] -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
+                            <div className="w-6 h-6 rounded-full bg-blue-400 shadow-[0_0_15px_#60a5fa] border-2 border-white animate-bounce" />
+                            <div className="px-2 py-1 bg-blue-500/20 rounded border border-blue-400/30">
+                                <p className="text-[9px] text-blue-200 font-bold uppercase">{selectedResult.filename}</p>
+                            </div>
+                        </div>
+
+                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-purple-500 shadow-[0_0_20px_#a855f7] border-2 border-white flex items-center justify-center text-sm">🔤</div>
+                            <div className="px-3 py-1 bg-purple-500/30 rounded-full border border-purple-400/50 backdrop-blur-md">
+                                <p className="text-[10px] text-white font-bold">Concept Alignment</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="space-y-6">
+                        <div className="p-5 bg-purple-50 rounded-2xl border border-purple-100 italic">
+                            <p className="text-sm text-purple-800 leading-relaxed">
+                                CLIP maps images and text to the same mathematical space. This match was found because the indexed image's visual features align with the semantic vector of your query.
+                            </p>
+                        </div>
+                        <div className="space-y-4">
+                            <h4 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">Alignment Score</h4>
+                            <div className="flex items-end gap-3">
+                                <span className="text-4xl font-black text-purple-600">{selectedResult.similarityScore.toFixed(1)}%</span>
+                                <span className="text-xs text-gray-400 mb-1">Semantic Confidence</span>
+                            </div>
+                            <div className="h-4 bg-muted rounded-full overflow-hidden">
+                                <div className="h-full bg-gradient-to-r from-blue-500 to-purple-600 transition-all duration-1000" style={{ width: `${selectedResult.similarityScore}%` }} />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
     const renderSVM = () => (
         <div className="space-y-6">
             <h3 className="text-lg font-bold">SVM: Decision Margin Review</h3>
@@ -424,6 +512,11 @@ const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
                 <p className="text-sm text-muted-foreground leading-relaxed italic">
                     The Support Vector Machine classifies results based on which side of the learned boundary the query image falls. Similar results usually share the same "decision region".
                 </p>
+
+                <div className="mt-4 p-3 bg-success/5 rounded-lg border border-success/10">
+                    <p className="text-[10px] font-bold text-success uppercase mb-1">Decision Insight</p>
+                    <p className="text-xs text-muted-foreground">The query image has been classified into the <span className="text-success font-bold">"Target Cluster"</span> based on its proximity to the support vectors.</p>
+                </div>
             </div>
         </div>
     );
@@ -487,6 +580,7 @@ const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
                                 {activeTab === 'segmentation' && renderSegmentation()}
                                 {activeTab === 'pca' && renderPCA()}
                                 {activeTab === 'svm' && renderSVM()}
+                                {activeTab === 'clip' && renderCLIP()}
                             </div>
                         </div>
 
