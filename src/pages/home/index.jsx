@@ -176,7 +176,7 @@ const ALGORITHMS = [
     },
 ];
 
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8005';
+const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8007';
 const CLOUDINARY_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'image_index';
 const CLOUDINARY_CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'demo';
 
@@ -406,6 +406,11 @@ function ResultCard({ result, rank, onSelect }) {
                     <span className="text-[10px] text-gray-400 capitalize">{result.algorithm}</span>
                     <span className="text-[10px] text-gray-400">{result.matchesCount || 0} pts</span>
                 </div>
+                {result.description && (
+                    <div className="mt-2 text-[9px] font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded truncate">
+                        🏷️ {result.description}
+                    </div>
+                )}
             </div>
         </div>
     );
@@ -439,6 +444,11 @@ function IndexGallery({ images, onClear, algo }) {
                                 <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md font-bold">{img.algorithm || 'INDEXED'}</span>
                                 {img.keypoints > 0 && <span className="text-[9px] text-gray-400 font-mono">{img.keypoints} pts</span>}
                             </div>
+                            {img.description && (
+                                <p className="mt-1 text-[9px] text-gray-500 italic truncate border-t border-gray-50 pt-1">
+                                    "{img.description}"
+                                </p>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -459,6 +469,7 @@ const HomePage = () => {
     const [isDraggingIndex, setIsDraggingIndex] = useState(false);
     const [isDraggingSearch, setIsDraggingSearch] = useState(false);
     const [textQuery, setTextQuery] = useState('');
+    const [indexDescription, setIndexDescription] = useState('');
     const [selectedDetailResult, setSelectedDetailResult] = useState(null);
     const indexInputRef = useRef(null);
     const searchInputRef = useRef(null);
@@ -502,6 +513,7 @@ const HomePage = () => {
             const idx = new FormData();
             if (url) { idx.append('url', url); idx.append('filename', file.name); } else { idx.append('file', file); }
             idx.append('algorithm', algo.id);
+            if (indexDescription) idx.append('description', indexDescription);
             const data = await fetch(`${API_BASE}/api/index`, { method: 'POST', body: idx }).then(r => r.json());
             setIndexedImages(prev => prev.map(img => img.id === tempId
                 ? { ...img, preview: url || preview, keypoints: data.keypoints || 0, pending: false } : img));
@@ -708,6 +720,18 @@ const HomePage = () => {
                         style={{ borderColor: isDraggingIndex ? algo.accent : '#d1d5db', background: isDraggingIndex ? algo.light : 'white' }}
                     >
                         <input ref={indexInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleIndexFiles} />
+
+                        <div className="mb-4 bg-white/50 backdrop-blur-sm rounded-xl p-2 border border-gray-200 shadow-inner max-w-sm mx-auto">
+                            <input
+                                type="text"
+                                placeholder="Optional: Label/Description for these images..."
+                                className="w-full px-4 py-2 bg-transparent text-sm focus:outline-none placeholder:text-gray-400"
+                                value={indexDescription}
+                                onChange={(e) => setIndexDescription(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                            />
+                        </div>
+
                         <div className="text-4xl mb-3">{isDraggingIndex ? '✨' : '📁'}</div>
                         <p className="font-bold text-gray-700 mb-1">Drop images here or click to select</p>
                         <p className="text-sm text-gray-400">Watch {algo.name} process each image step by step</p>
