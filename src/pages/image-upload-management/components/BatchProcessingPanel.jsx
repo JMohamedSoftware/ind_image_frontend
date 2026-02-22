@@ -92,7 +92,7 @@ const BatchProcessingPanel = ({
                     <div className="flex items-start gap-2">
                         <Icon name="Info" size={16} color="var(--color-primary)" className="flex-shrink-0 mt-0.5" />
                         <p className="text-xs md:text-sm text-muted-foreground">
-                            Batch processing will apply preprocessing settings to all uploaded images and prepare them for feature extraction.
+                            Images are automatically uploaded to Cloudinary and indexed for visual search as soon as you select them.
                         </p>
                     </div>
                 </div>

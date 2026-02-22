@@ -39,7 +39,7 @@ const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
                         </div>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="font-data">Keypoints: 847</span>
+                        <span className="font-data">Keypoints: {queryImage?.keypoints || 1000}</span>
                         <span className="font-data">Descriptors: 128-dim</span>
                     </div>
                 </div>
@@ -53,7 +53,7 @@ const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
                             className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 pointer-events-none">
-                            {[...Array(8)]?.map((_, i) => (
+                            {[...Array(Math.min(8, Math.ceil(selectedResult?.matchesCount / 10)))]?.map((_, i) => (
                                 <div
                                     key={i}
                                     className="absolute w-2 h-2 bg-success rounded-full border-2 border-white animate-pulse"
@@ -67,8 +67,8 @@ const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
                         </div>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="font-data">Keypoints: 823</span>
-                        <span className="font-data">Matches: 156</span>
+                        <span className="font-data">Keypoints: ~1000</span>
+                        <span className="font-data">Matches: {selectedResult?.matchesCount}</span>
                     </div>
                 </div>
             </div>
@@ -78,19 +78,27 @@ const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                     <div className="text-center">
                         <p className="text-xs text-muted-foreground mb-1">Total Matches</p>
-                        <p className="text-lg md:text-xl font-heading font-bold text-primary font-data">156</p>
+                        <p className="text-lg md:text-xl font-heading font-bold text-primary font-data">
+                            {selectedResult?.matchesCount}
+                        </p>
                     </div>
                     <div className="text-center">
                         <p className="text-xs text-muted-foreground mb-1">Good Matches</p>
-                        <p className="text-lg md:text-xl font-heading font-bold text-success font-data">142</p>
+                        <p className="text-lg md:text-xl font-heading font-bold text-success font-data">
+                            {Math.floor(selectedResult?.matchesCount * 0.9)}
+                        </p>
                     </div>
                     <div className="text-center">
                         <p className="text-xs text-muted-foreground mb-1">Match Ratio</p>
-                        <p className="text-lg md:text-xl font-heading font-bold text-warning font-data">91%</p>
+                        <p className="text-lg md:text-xl font-heading font-bold text-warning font-data">
+                            {((selectedResult?.matchesCount / (queryImage?.keypoints || 1000)) * 100).toFixed(1)}%
+                        </p>
                     </div>
                     <div className="text-center">
-                        <p className="text-xs text-muted-foreground mb-1">Avg Distance</p>
-                        <p className="text-lg md:text-xl font-heading font-bold text-foreground font-data">0.24</p>
+                        <p className="text-xs text-muted-foreground mb-1">Similarity</p>
+                        <p className="text-lg md:text-xl font-heading font-bold text-foreground font-data">
+                            {selectedResult?.similarityScore}%
+                        </p>
                     </div>
                 </div>
             </div>

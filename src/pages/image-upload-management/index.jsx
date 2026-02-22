@@ -131,7 +131,8 @@ const ImageUploadManagement = () => {
 
 
     useEffect(() => {
-        setImages(mockImages);
+        // Start with empty dataset
+        setImages([]);
     }, []);
 
     const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
@@ -261,30 +262,17 @@ const ImageUploadManagement = () => {
     };
 
     const handleStartProcessing = () => {
+        // Since images are processed on upload, this could be used to re-trigger
+        // Or we can just disable it and show it's already done
         setIsProcessing(true);
-        setProcessedCount(0);
-
-        const totalImages = images?.length;
-        const interval = setInterval(() => {
-            setProcessedCount((prev) => {
-                if (prev >= totalImages) {
-                    clearInterval(interval);
-                    setIsProcessing(false);
-                    return totalImages;
-                }
-                return prev + 1;
-            });
-        }, 1000);
+        setTimeout(() => setIsProcessing(false), 500);
     };
 
     const handleCancelProcessing = () => {
         setIsProcessing(false);
-        setProcessedCount(0);
     };
 
-    const estimatedTime = images?.length > 0 ?
-        `${Math.ceil((images?.length - processedCount) * 1.5)} seconds` :
-        "0 seconds";
+    const estimatedTime = "Done on upload";
 
     const completedImages = images?.filter((img) => img?.status === 'complete')?.length;
 
