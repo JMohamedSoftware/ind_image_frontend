@@ -3,15 +3,176 @@ import Image from 'components/ui/AppImage';
 import Icon from 'components/AppIcon';
 
 const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
-    const [activeTab, setActiveTab] = useState('keypoints');
+    const [activeTab, setActiveTab] = useState('summary');
 
     if (!selectedResult) return null;
 
-    const comparisonTabs = [
-        { id: 'keypoints', label: 'Keypoint Matching', icon: 'Target' },
-        { id: 'histogram', label: 'Color Histogram', icon: 'BarChart2' },
-        { id: 'features', label: 'Feature Vectors', icon: 'Layers' }
-    ];
+    const algorithm = (selectedResult.algorithm || queryImage?.algorithm || 'ORB').toUpperCase();
+
+    const getComparisonTabs = () => {
+        const baseTabs = [{ id: 'summary', label: 'Analysis Summary', icon: 'Info' }];
+
+        if (['SIFT', 'ORB', 'AKAZE'].includes(algorithm)) {
+            baseTabs.push({ id: 'keypoints', label: 'Keypoint Matching', icon: 'Target' });
+        }
+
+        if (algorithm === 'HOG') {
+            baseTabs.push({ id: 'hog', label: 'HOG Gradients', icon: 'Activity' });
+        }
+
+        if (algorithm === 'CNN') {
+            baseTabs.push({ id: 'cnn', label: 'Neural Network Layers', icon: 'Cpu' });
+        }
+
+        if (algorithm === 'MEANSHIFT' || algorithm === 'K-MEANS') {
+            baseTabs.push({ id: 'segmentation', label: algorithm === 'K-MEANS' ? 'Cluster Analysis' : 'Segmentation Details', icon: 'Box' });
+        }
+
+        if (algorithm === 'PCA') {
+            baseTabs.push({ id: 'pca', label: 'Principal Components', icon: 'Layers' });
+        }
+
+        if (algorithm === 'SVM') {
+            baseTabs.push({ id: 'svm', label: 'Decision Analysis', icon: 'Divide' });
+        }
+
+        baseTabs.push({ id: 'histogram', label: 'Color Statistics', icon: 'BarChart2' });
+        return baseTabs;
+    };
+
+    const comparisonTabs = getComparisonTabs();
+
+    const renderSummary = () => (
+        <div className="space-y-6">
+            <div className="p-6 bg-primary/5 rounded-2xl border border-primary/20">
+                <h3 className="text-xl font-heading font-bold mb-4 flex items-center gap-2">
+                    <Icon name="Zap" className="text-primary" />
+                    How {algorithm} Works
+                </h3>
+                <div className="text-muted-foreground space-y-4 leading-relaxed">
+                    {algorithm === 'SIFT' && (
+                        <p>SIFT (Scale-Invariant Feature Transform) identifies stable keypoints across different scales and orientations, making it extremely robust for object recognition.</p>
+                    )}
+                    {algorithm === 'HOG' && (
+                        <p>HOG (Histogram of Oriented Gradients) counts occurrences of gradient orientation in localized portions of an image, widely used for human and object detection.</p>
+                    )}
+                    {algorithm === 'CNN' && (
+                        <p>CNNs (Convolutional Neural Networks) learn hierarchical features automatically through multiple layers of abstraction, mimicking human visual processing.</p>
+                    )}
+                    {algorithm === 'MEANSHIFT' && (
+                        <p>Mean Shift is a non-parametric clustering technique which does not require prior knowledge of the number of clusters, and does not constrain the shape of the clusters.</p>
+                    )}
+                    {algorithm === 'K-MEANS' && (
+                        <p>K-Means partitions the image data into K clusters. Each pixel is assigned to the cluster with the nearest mean (centroid).</p>
+                    )}
+                    {algorithm === 'ORB' && (
+                        <p>ORB is a fast binary descriptor based on BRIEF and FAST, providing a computationally efficient alternative to SIFT/SURF.</p>
+                    )}
+                    {algorithm === 'SVM' && (
+                        <p>SVM (Support Vector Machine) finds a high-dimensional hyperplane that best separates different image categories with maximum margin.</p>
+                    )}
+                    {algorithm === 'PCA' && (
+                        <p>PCA (Principal Component Analysis) reduces the dimensionality of image data while retaining the variations that contribute most to its appearance.</p>
+                    )}
+                    <p className="font-medium text-foreground">Theoretical Concept: {selectedResult.educational_info?.concept || "Visual pattern matching relative to spatial features."}</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="glass p-6 rounded-2xl border border-border">
+                    <h4 className="font-bold mb-3 flex items-center gap-2">
+                        <Icon name="Target" size={18} /> match Statistics
+                    </h4>
+                    <div className="space-y-3">
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Similarity Score</span>
+                            <span className="font-bold text-success">{selectedResult.similarityScore}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Confidence Level</span>
+                            <span className="font-bold">{selectedResult.confidence}%</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Processing Latency</span>
+                            <span className="font-bold">{selectedResult.processingTime}</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div className="glass p-6 rounded-2xl border border-border">
+                    <h4 className="font-bold mb-3 flex items-center gap-2">
+                        <Icon name="Activity" size={18} /> Computational Complexity
+                    </h4>
+                    <div className="space-y-3">
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">O-Notation</span>
+                            <span className="font-mono bg-muted px-2 rounded">O(N log N)</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Memory Usage</span>
+                            <span className="font-bold">~150MB</span>
+                        </div>
+                        <div className="flex justify-between">
+                            <span className="text-muted-foreground">Optimization</span>
+                            <span className="font-bold text-primary">GPU Accelerated</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderSegmentation = () => (
+        <div className="space-y-6">
+            <h3 className="text-lg font-bold">Mean Shift Segmentation Analysis</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div className="space-y-4 text-center">
+                    <div className="relative aspect-square rounded-2xl overflow-hidden border-4 border-primary/20">
+                        <Image src={selectedResult.image} className="w-full h-full object-cover grayscale opacity-50" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                            <div className="w-full h-full bg-primary/20 backdrop-blur-[2px] grid grid-cols-3 grid-rows-3 gap-1 p-4">
+                                {[...Array(9)].map((_, i) => (
+                                    <div key={i} className="bg-primary/40 rounded-lg animate-pulse" style={{ animationDelay: `${i * 150}ms` }} />
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                    <p className="text-sm font-medium">Segmented Spatial Regions</p>
+                </div>
+                <div className="space-y-4">
+                    <div className="p-4 bg-muted/50 rounded-xl space-y-4">
+                        <h4 className="font-bold text-sm uppercase tracking-wider text-muted-foreground">Clusters Identity</h4>
+                        {[1, 2, 3, 4].map(id => (
+                            <div key={id} className="flex items-center gap-4">
+                                <div className="w-4 h-4 rounded-full bg-primary" style={{ opacity: 1 - id * 0.2 }} />
+                                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                                    <div className="h-full bg-primary transition-all duration-1000" style={{ width: `${Math.random() * 100}%` }} />
+                                </div>
+                                <span className="text-xs font-mono">Region {id}</span>
+                            </div>
+                        ))}
+                    </div>
+                    <p className="text-sm text-muted-foreground leading-relaxed italic">
+                        Mean Shift identifies modes in the density of color and spatial coordinates, effectively grouping similar pixels into semantic regions.
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+
+    const renderHOG = () => (
+        <div className="space-y-6 text-center">
+            <h3 className="text-lg font-bold">HOG Gradient Distribution</h3>
+            <div className="grid grid-cols-4 md:grid-cols-8 gap-2 p-4 bg-black/90 rounded-2xl">
+                {[...Array(32)].map((_, i) => (
+                    <div key={i} className="aspect-square flex items-center justify-center">
+                        <div className="w-full h-0.5 bg-success" style={{ transform: `rotate(${Math.random() * 180}deg)`, opacity: 0.3 + Math.random() * 0.7 }} />
+                    </div>
+                ))}
+            </div>
+            <p className="text-muted-foreground text-sm">Gradient Orientations captured at 128x128 resolution block normalization.</p>
+        </div>
+    );
 
     const renderKeypointMatching = () => (
         <div className="space-y-4">
@@ -25,13 +186,13 @@ const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
                             className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 pointer-events-none">
-                            {[...Array(8)]?.map((_, i) => (
+                            {[...Array(12)]?.map((_, i) => (
                                 <div
                                     key={i}
                                     className="absolute w-2 h-2 bg-warning rounded-full border-2 border-warning-foreground animate-pulse"
                                     style={{
-                                        left: `${15 + i * 10}%`,
-                                        top: `${20 + (i % 3) * 20}%`,
+                                        left: `${10 + Math.random() * 80}%`,
+                                        top: `${10 + Math.random() * 80}%`,
                                         animationDelay: `${i * 100}ms`
                                     }}
                                 />
@@ -39,8 +200,8 @@ const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
                         </div>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="font-data">Keypoints: {queryImage?.keypoints || 1000}</span>
-                        <span className="font-data">Descriptors: 128-dim</span>
+                        <span className="font-data">Keypoints: {queryImage?.keypoints || 500}</span>
+                        <span className="font-data">Descriptor Type: {algorithm}</span>
                     </div>
                 </div>
 
@@ -53,13 +214,13 @@ const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
                             className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 pointer-events-none">
-                            {[...Array(Math.min(8, Math.ceil(selectedResult?.matchesCount / 10)))]?.map((_, i) => (
+                            {[...Array(12)]?.map((_, i) => (
                                 <div
                                     key={i}
                                     className="absolute w-2 h-2 bg-success rounded-full border-2 border-white animate-pulse"
                                     style={{
-                                        left: `${15 + i * 10}%`,
-                                        top: `${20 + (i % 3) * 20}%`,
+                                        left: `${10 + Math.random() * 80}%`,
+                                        top: `${10 + Math.random() * 80}%`,
                                         animationDelay: `${i * 100}ms`
                                     }}
                                 />
@@ -67,8 +228,8 @@ const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
                         </div>
                     </div>
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="font-data">Keypoints: ~1000</span>
-                        <span className="font-data">Matches: {selectedResult?.matchesCount}</span>
+                        <span className="font-data">Keypoints: {selectedResult?.keypoints}</span>
+                        <span className="font-data">Robust Matches: {selectedResult?.matchesCount}</span>
                     </div>
                 </div>
             </div>
@@ -188,71 +349,54 @@ const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
         </div>
     );
 
-    const renderFeatureVectors = () => (
-        <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Query Feature Vector</p>
-                    <div className="h-48 md:h-64 bg-muted/30 rounded-lg border border-border p-3 overflow-hidden">
-                        <div className="grid grid-cols-16 gap-1 h-full">
-                            {[...Array(128)]?.map((_, i) => (
-                                <div
-                                    key={i}
-                                    className="bg-primary rounded-sm transition-all duration-250 hover:bg-primary/80"
-                                    style={{
-                                        height: `${20 + Math.random() * 80}%`,
-                                        opacity: 0.3 + Math.random() * 0.7
-                                    }}
-                                />
+    const renderCNN = () => (
+        <div className="space-y-8">
+            <h3 className="text-xl font-bold flex items-center gap-2">
+                <Icon name="Cpu" className="text-primary" />
+                Deep Feature Visualization (Layer Activations)
+            </h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {['Conv2D', 'ReLU', 'MaxPooling', 'Batchnorm'].map((layer, idx) => (
+                    <div key={layer} className="glass p-4 rounded-xl border border-primary/10">
+                        <p className="text-[10px] font-bold uppercase text-muted-foreground mb-2">{layer}</p>
+                        <div className="grid grid-cols-4 gap-1">
+                            {[...Array(16)].map((_, i) => (
+                                <div key={i} className="aspect-square rounded-[2px]" style={{
+                                    backgroundColor: `rgba(var(--color-primary-rgb), ${0.1 + Math.random() * 0.9})`
+                                }} />
                             ))}
                         </div>
                     </div>
-                    <p className="text-xs text-muted-foreground font-data">
-                        Dimensions: 128 | Norm: 1.000
-                    </p>
-                </div>
-
-                <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Result Feature Vector</p>
-                    <div className="h-48 md:h-64 bg-muted/30 rounded-lg border border-border p-3 overflow-hidden">
-                        <div className="grid grid-cols-16 gap-1 h-full">
-                            {[...Array(128)]?.map((_, i) => (
-                                <div
-                                    key={i}
-                                    className="bg-success rounded-sm transition-all duration-250 hover:bg-success/80"
-                                    style={{
-                                        height: `${20 + Math.random() * 80}%`,
-                                        opacity: 0.3 + Math.random() * 0.7
-                                    }}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground font-data">
-                        Dimensions: 128 | Norm: 0.987
-                    </p>
-                </div>
+                ))}
             </div>
+            <div className="p-4 bg-primary/5 rounded-xl border border-primary/10">
+                <p className="text-sm italic text-muted-foreground">CNNs transform raw pixels into semantic embeddings. The activations above represent how the network "sees" specific patterns like edges, textures, and object parts.</p>
+            </div>
+        </div>
+    );
 
-            <div className="p-4 bg-muted/50 rounded-lg space-y-3">
-                <h4 className="font-heading font-semibold text-sm">Distance Metrics</h4>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                    <div className="p-3 bg-card rounded-md border border-border">
-                        <p className="text-xs text-muted-foreground mb-1">Euclidean Distance</p>
-                        <p className="text-lg md:text-xl font-heading font-bold text-primary font-data">
-                            {selectedResult?.distance?.toFixed(4)}
-                        </p>
+    const renderPCA = () => (
+        <div className="space-y-6">
+            <h3 className="text-lg font-bold">PCA: Dimensionality Reduction Analysis</h3>
+            <div className="p-6 bg-muted/30 rounded-2xl border border-border">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div className="space-y-4">
+                        <p className="text-sm text-muted-foreground">Variance explained by the first 8 principal components:</p>
+                        <div className="space-y-2">
+                            {[0.45, 0.25, 0.12, 0.08, 0.04, 0.03, 0.02, 0.01].map((v, i) => (
+                                <div key={i} className="flex items-center gap-3">
+                                    <span className="text-[10px] font-mono w-6">PC{i + 1}</span>
+                                    <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
+                                        <div className="h-full bg-primary" style={{ width: `${v * 100}%` }} />
+                                    </div>
+                                    <span className="text-[10px] font-mono">{(v * 100).toFixed(0)}%</span>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                    <div className="p-3 bg-card rounded-md border border-border">
-                        <p className="text-xs text-muted-foreground mb-1">Cosine Similarity</p>
-                        <p className="text-lg md:text-xl font-heading font-bold text-success font-data">
-                            {(selectedResult?.similarityScore / 100)?.toFixed(4)}
-                        </p>
-                    </div>
-                    <div className="p-3 bg-card rounded-md border border-border">
-                        <p className="text-xs text-muted-foreground mb-1">Manhattan Distance</p>
-                        <p className="text-lg md:text-xl font-heading font-bold text-warning font-data">
-                            {(selectedResult?.distance * 1.5)?.toFixed(4)}
+                    <div className="flex items-center justify-center p-4 border-2 border-dashed border-border rounded-xl">
+                        <p className="text-xs text-center text-muted-foreground leading-relaxed italic">
+                            PCA focuses on the core visual essence. Most of the information is captured in the first few "Principal Components", allowing for massive speed gains during matching.
                         </p>
                     </div>
                 </div>
@@ -260,61 +404,95 @@ const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
         </div>
     );
 
+    const renderSVM = () => (
+        <div className="space-y-6">
+            <h3 className="text-lg font-bold">SVM: Decision Margin Review</h3>
+            <div className="p-6 bg-muted/30 rounded-2xl border border-border">
+                <div className="relative h-64 border border-border bg-white rounded-xl overflow-hidden mb-4">
+                    <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-primary/40 -translate-x-1/2" />
+                    <div className="absolute inset-0 grid grid-cols-10 grid-rows-10 gap-0 opacity-20">
+                        {[...Array(100)].map((_, i) => (
+                            <div key={i} className={i % 10 < 5 ? 'bg-primary' : 'bg-success'} />
+                        ))}
+                    </div>
+                    <div className="absolute inset-0 flex items-center justify-center">
+                        <div className="p-5 bg-white/90 backdrop-blur-md rounded-2xl border border-border shadow-2xl">
+                            <p className="text-[10px] uppercase tracking-widest font-black text-center text-primary">Separating Hyperplane</p>
+                        </div>
+                    </div>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed italic">
+                    The Support Vector Machine classifies results based on which side of the learned boundary the query image falls. Similar results usually share the same "decision region".
+                </p>
+            </div>
+        </div>
+    );
+
     return (
-        <div className="fixed inset-0 z-200 bg-background/95 backdrop-blur-sm overflow-y-auto">
+        <div className="fixed inset-0 z-50 bg-background/95 backdrop-blur-sm overflow-y-auto pt-20">
             <div className="min-h-screen p-4 md:p-6 lg:p-8">
-                <div className="max-w-screen-2xl mx-auto">
-                    <div className="bg-card border border-border rounded-lg shadow-lg">
-                        <div className="p-4 md:p-6 border-b border-border">
+                <div className="max-w-screen-xl mx-auto">
+                    <div className="bg-card border border-border rounded-3xl shadow-2xl overflow-hidden">
+                        <div className="p-6 md:p-8 border-b border-border bg-muted/20">
                             <div className="flex items-center justify-between">
-                                <div className="flex items-center space-x-3">
-                                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                                        <Icon name="GitCompare" size={20} color="var(--color-primary)" />
+                                <div className="flex items-center space-x-4">
+                                    <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
+                                        <Icon name="Brain" size={24} color="var(--color-primary)" />
                                     </div>
                                     <div>
-                                        <h2 className="font-heading font-semibold text-lg md:text-xl lg:text-2xl">
-                                            Detailed Comparison
+                                        <h2 className="font-heading font-bold text-2xl">
+                                            Educational deep-dive
                                         </h2>
-                                        <p className="text-sm text-muted-foreground">
-                                            Query vs Result #{selectedResult?.rank} • {selectedResult?.similarityScore}% Match
+                                        <p className="text-sm text-muted-foreground font-medium">
+                                            Method: <span className="text-primary font-bold">{algorithm}</span> • Confidence: {selectedResult?.confidence}%
                                         </p>
                                     </div>
                                 </div>
                                 <button
                                     onClick={onClose}
-                                    className="p-2 rounded-md hover:bg-muted transition-colors"
+                                    className="w-10 h-10 rounded-xl hover:bg-muted transition-colors flex items-center justify-center"
                                 >
                                     <Icon name="X" size={24} />
                                 </button>
                             </div>
                         </div>
 
-                        <div className="p-4 md:p-6">
-                            <div className="flex items-center space-x-2 mb-6 overflow-x-auto pb-2">
+                        <div className="p-6 md:p-8">
+                            <div className="flex items-center space-x-2 mb-8 overflow-x-auto pb-2 scrollbar-hide">
                                 {comparisonTabs?.map((tab) => (
                                     <button
                                         key={tab?.id}
                                         onClick={() => setActiveTab(tab?.id)}
                                         className={`
-                      flex items-center space-x-2 px-4 py-2 rounded-md whitespace-nowrap
-                      transition-all duration-250
-                      ${activeTab === tab?.id
-                                                ? 'bg-primary text-primary-foreground shadow-sm'
-                                                : 'bg-muted text-foreground hover:bg-muted/80'
+                                            flex items-center space-x-2 px-6 py-3 rounded-xl whitespace-nowrap
+                                            transition-all duration-300 font-bold text-sm
+                                            ${activeTab === tab?.id
+                                                ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/25 scale-105'
+                                                : 'bg-muted/50 text-muted-foreground hover:bg-muted/80'
                                             }
-                    `}
+                                        `}
                                     >
-                                        <Icon name={tab?.icon} size={16} />
-                                        <span className="font-medium text-sm">{tab?.label}</span>
+                                        <Icon name={tab?.icon} size={18} />
+                                        <span>{tab?.label}</span>
                                     </button>
                                 ))}
                             </div>
 
-                            <div className="min-h-[400px]">
+                            <div className="min-h-[500px] animate-in fade-in slide-in-from-bottom-4 duration-500">
+                                {activeTab === 'summary' && renderSummary()}
                                 {activeTab === 'keypoints' && renderKeypointMatching()}
                                 {activeTab === 'histogram' && renderHistogramComparison()}
-                                {activeTab === 'features' && renderFeatureVectors()}
+                                {activeTab === 'hog' && renderHOG()}
+                                {activeTab === 'cnn' && renderCNN()}
+                                {activeTab === 'segmentation' && renderSegmentation()}
+                                {activeTab === 'pca' && renderPCA()}
+                                {activeTab === 'svm' && renderSVM()}
                             </div>
+                        </div>
+
+                        <div className="p-4 bg-muted/10 border-t border-border flex justify-between items-center px-10">
+                            <span className="text-xs text-muted-foreground font-mono">Academic ID: {selectedResult.id}</span>
+                            <span className="text-xs text-muted-foreground font-mono">Timestamp: {selectedResult.timestamp}</span>
                         </div>
                     </div>
                 </div>

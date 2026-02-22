@@ -59,6 +59,101 @@ const ALGORITHMS = [
         descriptorDetail: 'M-LDB — computes binary comparisons of gradient values in a local grid around each keypoint → 486 bits',
         matchDetail: 'Same as ORB: XOR → count differing bits. AKAZE descriptors are larger so matching is slightly slower but more accurate.',
     },
+    {
+        id: 'HOG',
+        name: 'HOG',
+        full: 'Histogram of Oriented Gradients',
+        accent: '#059669',
+        light: '#ecfdf5',
+        border: '#a7f3d0',
+        text: '#047857',
+        badge: 'Structural',
+        description: 'Focuses on the shape and structure of objects. Famous for being used in human detection.',
+        speed: 4,
+        accuracy: 3,
+        descriptorSize: '3,780 features (for 64x128)',
+        descriptorType: 'Gradient Vector',
+        matchMetric: 'Cosine Similarity',
+        detectorDetail: 'Cell-based Gradients — divides image into small cells, computes orientation of edges in each cell',
+        descriptorDetail: 'Block Normalization — local histograms are contrast-normalized by overlapping blocks for better lighting invariance',
+        matchDetail: 'Vector dot product — compares the structural "fingerprint" of the two images.',
+    },
+    {
+        id: 'CNN',
+        name: 'CNN',
+        full: 'Convolutional Neural Network',
+        accent: '#2563eb',
+        light: '#eff6ff',
+        border: '#bfdbfe',
+        text: '#1d4ed8',
+        badge: 'Deep Learning',
+        description: 'Learns hierarchical patterns automatically. Mimics how the human brain processes vision.',
+        speed: 1,
+        accuracy: 5,
+        descriptorSize: '4096 floats (VGG/ResNet)',
+        descriptorType: 'Neural Embedding',
+        matchMetric: 'Euclidean distance',
+        detectorDetail: 'Convolutional Layers — filters slide across the image to find textures, shapes, and complex objects',
+        descriptorDetail: 'Fully Connected Layer — flattens the 2D spatial maps into a single high-dimensional semantic vector',
+        matchDetail: 'Vector distance — similarity is measured in a high-dimensional "latent space" where similar objects group together.',
+    },
+    {
+        id: 'SVM',
+        name: 'SVM',
+        full: 'Support Vector Machine',
+        accent: '#db2777',
+        light: '#fdf2f8',
+        border: '#fbcfe8',
+        text: '#be185d',
+        badge: 'ML Classifier',
+        description: 'Finds the optimal boundary between different types of images. Great for binary classification.',
+        speed: 4,
+        accuracy: 4,
+        descriptorSize: 'Variable',
+        descriptorType: 'Decision Boundary',
+        matchMetric: 'Distance to Hyperplane',
+        detectorDetail: 'Support Vectors — the algorithm identifies the most "difficult" data points that define the separation boundary',
+        descriptorDetail: 'Kernel Trick — maps data to higher dimensions to find a linear separation where none existed before',
+        matchDetail: 'Classification — checks which side of the learned boundary the new image falls on.',
+    },
+    {
+        id: 'PCA',
+        name: 'PCA',
+        full: 'Principal Component Analysis',
+        accent: '#475569',
+        light: '#f8fafc',
+        border: '#e2e8f0',
+        text: '#334155',
+        badge: 'Dimension Reduction',
+        description: 'Simplifies complex data. Retains only the most important visual variations.',
+        speed: 5,
+        accuracy: 3,
+        descriptorSize: '16-64 components',
+        descriptorType: 'Reduced Vector',
+        matchMetric: 'Mahalanobis distance',
+        detectorDetail: 'Eigenvectors — finds the directions of maximum variance (the "main look" of the dataset)',
+        descriptorDetail: 'Projection — squashes a massive 128-float vector down to just 16 "principal components" without losing core info',
+        matchDetail: 'Low-rank matching — comparing images in a much smaller, compressed space for maximum speed.',
+    },
+    {
+        id: 'MEANSHIFT',
+        name: 'Mean Shift',
+        full: 'Non-Parametric Clustering',
+        accent: '#d97706',
+        light: '#fffbeb',
+        border: '#fef3c7',
+        text: '#b45309',
+        badge: 'Segmentation',
+        description: 'Groups pixels together to find "blobs" of color or texture. No fixed number of clusters needed.',
+        speed: 2,
+        accuracy: 4,
+        descriptorSize: 'N clusters',
+        descriptorType: 'Modal Centroids',
+        matchMetric: 'Bhattacharyya distance',
+        detectorDetail: 'Density Gradient — iteratively shifts towards regions of higher data density (the "modes")',
+        descriptorDetail: 'Segmentation — clusters pixels into regions of uniform color/texture, creating a simplified map',
+        matchDetail: 'Histogram matching — comparing the distribution of the segmented regions.',
+    },
 ];
 
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
@@ -74,9 +169,9 @@ function LiveLog({ steps }) {
                 <div
                     key={i}
                     className={`flex gap-3 items-start py-2.5 border-l-2 pl-4 transition-all duration-300 ${s.status === 'done' ? 'border-green-400' :
-                            s.status === 'running' ? 'border-blue-400' :
-                                s.status === 'error' ? 'border-red-400' :
-                                    'border-gray-200'
+                        s.status === 'running' ? 'border-blue-400' :
+                            s.status === 'error' ? 'border-red-400' :
+                                'border-gray-200'
                         } ${s.status === 'pending' ? 'opacity-30' : 'opacity-100'}`}
                 >
                     <div className="text-lg mt-0.5 shrink-0">
@@ -87,9 +182,9 @@ function LiveLog({ steps }) {
                     </div>
                     <div>
                         <p className={`text-sm font-semibold ${s.status === 'done' ? 'text-gray-800' :
-                                s.status === 'running' ? 'text-blue-700' :
-                                    s.status === 'error' ? 'text-red-700' :
-                                        'text-gray-400'
+                            s.status === 'running' ? 'text-blue-700' :
+                                s.status === 'error' ? 'text-red-700' :
+                                    'text-gray-400'
                             }`}>
                             {s.text}
                         </p>
@@ -119,9 +214,9 @@ function Dots({ score, color }) {
 function IndexedCard({ image, algo }) {
     const [steps, setSteps] = useState([
         { text: 'Received image file', detail: null, status: 'pending' },
-        { text: 'Convert to grayscale', detail: null, status: 'pending' },
-        { text: `Run ${algo.name} keypoint detector`, detail: null, status: 'pending' },
-        { text: `Compute ${algo.name} descriptors`, detail: null, status: 'pending' },
+        { text: 'Preprocessing', detail: null, status: 'pending' },
+        { text: 'Feature Extraction', detail: null, status: 'pending' },
+        { text: 'Descriptor Generation', detail: null, status: 'pending' },
         { text: 'Store in index', detail: null, status: 'pending' },
     ]);
 
@@ -131,28 +226,30 @@ function IndexedCard({ image, algo }) {
     useEffect(() => {
         update(0, 'running');
         const t0 = setTimeout(() => { update(0, 'done', `File: ${image.name}`); update(1, 'running'); }, 300);
-        const t1 = setTimeout(() => { update(1, 'done', 'Color space removed — reduces computation, humans see edges the same in grayscale'); update(2, 'running'); }, 900);
+        const t1 = setTimeout(() => { update(1, 'done', 'Image converted to internal format & resized if needed.'); update(2, 'running'); }, 900);
         const t2 = setTimeout(() => {
+            const isKeypoint = ['ORB', 'SIFT', 'AKAZE'].includes(algo.id);
             update(2, 'done',
-                image.keypoints > 0
+                isKeypoint
                     ? `${algo.detectorDetail} → Found ${image.keypoints} keypoints`
                     : `${algo.detectorDetail}`
             );
             update(3, 'running');
         }, 1600);
         const t3 = setTimeout(() => {
+            const isKeypoint = ['ORB', 'SIFT', 'AKAZE'].includes(algo.id);
             update(3, 'done',
-                image.keypoints > 0
+                isKeypoint
                     ? `${algo.descriptorDetail} → ${image.keypoints} descriptors × ${algo.descriptorSize}`
                     : algo.descriptorDetail
             );
             update(4, 'running');
         }, 2400);
         const t4 = setTimeout(() => {
-            update(4, 'done', `Saved to memory (pickle). Index now has ${image.keypoints} features from this image.`);
+            update(4, 'done', `Index updated with ${algo.name} features.`);
         }, 3000);
         return () => [t0, t1, t2, t3, t4].forEach(clearTimeout);
-    }, [image.keypoints]);
+    }, [image.keypoints, algo]);
 
     return (
         <div className="rounded-2xl border bg-white shadow-sm overflow-hidden" style={{ borderColor: algo.border }}>
@@ -262,12 +359,13 @@ export default function HomePage() {
         setSearchResults(null);
         setSearchError(null);
 
+        const isKeypoint = ['ORB', 'SIFT', 'AKAZE'].includes(algo.id);
         const makeStep = (text, detail = null, status = 'pending') => ({ text, detail, status });
         const initSteps = [
             makeStep(`Load query image`, null, 'running'),
-            makeStep(`Extract ${algo.name} keypoints from query`),
-            makeStep(`Compute ${algo.name} descriptors for query`),
-            makeStep(`Compare against ${indexedImages.length} indexed image(s) using ${algo.matchMetric}`),
+            makeStep(isKeypoint ? `Extract ${algo.name} keypoints from query` : `Preprocess query image for ${algo.name}`),
+            makeStep(isKeypoint ? `Compute ${algo.name} descriptors for query` : `Generate ${algo.name} feature vector`),
+            makeStep(`Match against ${indexedImages.length} images using ${algo.matchMetric}`),
             makeStep('Rank results by similarity score'),
         ];
         setSearchLogSteps(initSteps);
@@ -277,17 +375,17 @@ export default function HomePage() {
 
         try {
             const blob = await fetch(queryImage.preview).then(r => r.blob());
-            upd(0, 'done', `Query image loaded (${(blob.size / 1024).toFixed(1)} KB)`);
+            upd(0, 'done', `Query loaded (${(blob.size / 1024).toFixed(1)} KB)`);
             upd(1, 'running');
 
             const form = new FormData();
             form.append('file', blob, queryImage.name);
             form.append('algorithm', algo.id);
 
-            await new Promise(r => setTimeout(r, 500));
+            await new Promise(r => setTimeout(r, 600));
             upd(1, 'done', algo.detectorDetail);
             upd(2, 'running');
-            await new Promise(r => setTimeout(r, 500));
+            await new Promise(r => setTimeout(r, 600));
             upd(2, 'done', algo.descriptorDetail);
             upd(3, 'running');
 
@@ -296,15 +394,15 @@ export default function HomePage() {
             const data = await res.json();
 
             const matchSummary = data.results?.length > 0
-                ? data.results.map((r, i) => `#${i + 1} "${r.filename}" → ${r.matchesCount} good matches → ${r.similarityScore.toFixed(1)}%`).join(' | ')
-                : 'No good matches found';
+                ? data.results.slice(0, 3).map((r, i) => `#${i + 1} "${r.filename}" (${r.similarityScore.toFixed(1)}%)`).join(', ') + (data.results.length > 3 ? '...' : '')
+                : 'No matches found';
 
-            upd(3, 'done', `${algo.matchDetail} — Results: ${matchSummary}`);
+            upd(3, 'done', `${algo.matchDetail} — ${matchSummary}`);
             upd(4, 'running');
-            await new Promise(r => setTimeout(r, 300));
+            await new Promise(r => setTimeout(r, 400));
             upd(4, 'done', data.results?.length > 0
-                ? `Top result: ${data.results[0].filename} with ${data.results[0].similarityScore.toFixed(1)}% similarity (${data.results[0].matchesCount} matches)`
-                : 'No similar images found in index');
+                ? `Found ${data.results.length} results. Top: ${data.results[0].filename} (${data.results[0].similarityScore.toFixed(1)}%)`
+                : 'Search complete. No matches found.');
 
             setSearchResults(data);
             setIsSearching(false);
@@ -379,7 +477,7 @@ export default function HomePage() {
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
                             <div className="rounded-xl p-4" style={{ background: algo.light }}>
                                 <p className="text-xs font-bold text-gray-400 mb-1">① Detector</p>
-                                <p className="font-semibold text-gray-800 mb-1">{algo.id === 'ORB' ? 'FAST' : algo.id === 'SIFT' ? 'DoG' : 'AOS'}</p>
+                                <p className="font-semibold text-gray-800 mb-1">{['ORB', 'SIFT', 'AKAZE'].includes(algo.id) ? 'Keypoint Detector' : 'Feature Extractor'}</p>
                                 <p className="text-xs text-gray-500 leading-relaxed">{algo.detectorDetail}</p>
                             </div>
                             <div className="rounded-xl p-4" style={{ background: algo.light }}>
@@ -522,16 +620,24 @@ export default function HomePage() {
                             </thead>
                             <tbody>
                                 {[
-                                    ['Detector', 'FAST corners', 'DoG extrema', 'AOS extrema'],
-                                    ['Descriptor', 'Binary (BRIEF)', 'Float (128×4B)', 'Binary (M-LDB)'],
-                                    ['Size / keypoint', '32 bytes', '512 bytes', '61 bytes'],
-                                    ['Matching', 'Hamming (XOR)', 'L2 Euclidean', 'Hamming'],
-                                    ['Scale invariant', 'Partial', 'Full', 'Full'],
-                                    ['Typical speed', '~10ms', '~80ms', '~25ms'],
-                                ].map((row, i) => (
-                                    <tr key={row[0]} className={`border-b border-gray-100 ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
-                                        <td className="p-4 font-semibold text-gray-600">{row[0]}</td>
-                                        {row.slice(1).map((v, j) => <td key={j} className="p-4 text-gray-700 text-xs font-mono">{v}</td>)}
+                                    { label: 'Badge', key: 'badge' },
+                                    { label: 'Type', key: 'descriptorType' },
+                                    { label: 'Output Size', key: 'descriptorSize' },
+                                    { label: 'Metric', key: 'matchMetric' },
+                                    { label: 'Rel. Accuracy', key: 'accuracy', isDots: true },
+                                    { label: 'Rel. Speed', key: 'speed', isDots: true },
+                                ].map((prop, i) => (
+                                    <tr key={prop.label} className={`border-b border-gray-100 ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
+                                        <td className="p-4 font-semibold text-gray-600">{prop.label}</td>
+                                        {ALGORITHMS.map(a => (
+                                            <td key={a.id} className="p-4 text-gray-700 text-xs">
+                                                {prop.isDots ? (
+                                                    <Dots score={a[prop.key]} color={a.accent} />
+                                                ) : (
+                                                    <span className="font-mono">{a[prop.key]}</span>
+                                                )}
+                                            </td>
+                                        ))}
                                     </tr>
                                 ))}
                             </tbody>

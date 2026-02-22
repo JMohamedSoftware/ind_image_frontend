@@ -73,6 +73,7 @@ const VisualSearchInterface = () => {
 
             const formData = new FormData();
             formData.append('file', blob, queryImage.name);
+            formData.append('algorithm', algorithmConfig.featureMethod);
 
             setProgress(30);
 

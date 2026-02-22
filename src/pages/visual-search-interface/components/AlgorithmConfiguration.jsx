@@ -20,19 +20,34 @@ const AlgorithmConfiguration = ({
             description: 'Robust to scale and rotation changes'
         },
         {
-            value: 'SURF',
-            label: 'SURF (Speeded-Up)',
-            description: 'Faster alternative to SIFT'
-        },
-        {
-            value: 'ColorHistogram',
-            label: 'Color Histogram',
-            description: 'Color distribution analysis'
-        },
-        {
             value: 'HOG',
             label: 'HOG (Histogram of Gradients)',
-            description: 'Edge and gradient patterns'
+            description: 'Edge and gradient patterns for object detection'
+        },
+        {
+            value: 'K-Means',
+            label: 'K-Means Clustering',
+            description: 'Feature space partitioning'
+        },
+        {
+            value: 'SVM',
+            label: 'SVM classification',
+            description: 'Support Vector Machine classification'
+        },
+        {
+            value: 'CNN',
+            label: 'CNN (Deep Learning)',
+            description: 'Convolutional Neural Network features'
+        },
+        {
+            value: 'MeanShift',
+            label: 'Mean Shift',
+            description: 'Segmentation algorithm'
+        },
+        {
+            value: 'PCA',
+            label: 'PCA Reduction',
+            description: 'Dimensionality reduction'
         }
     ];
 
