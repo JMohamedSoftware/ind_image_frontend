@@ -119,26 +119,26 @@ const VisualSearchInterface = () => {
         <div className="min-h-screen bg-background text-foreground">
             <HorizontalTabNavigation />
 
-            <div className="pt-20 pb-8 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-screen-2xl mx-auto">
-                    <div className="mb-6 md:mb-8 text-left">
-                        <div className="flex items-center gap-3 mb-2">
-                            <div className="w-10 h-10 md:w-12 md:h-12 bg-primary/10 rounded-lg flex items-center justify-center">
-                                <Icon name="Search" size={24} color="var(--color-primary)" />
+            <div className="pt-24 md:pt-32 pb-8 px-4">
+                <div className="fluid-container">
+                    <div className="mb-8 md:mb-12">
+                        <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
+                            <div className="w-12 h-12 md:w-16 md:h-16 bg-primary/10 rounded-2xl flex items-center justify-center shadow-sm">
+                                <Icon name="Search" size={32} color="var(--color-primary)" />
                             </div>
                             <div>
-                                <h1 className="text-2xl md:text-3xl lg:text-4xl font-heading font-semibold">
+                                <h1 className="text-foreground tracking-tight">
                                     Visual Search Interface
                                 </h1>
-                                <p className="text-sm md:text-base text-muted-foreground mt-1 text-left">
-                                    Analyze content and find visual similarities within your indexed image collection
+                                <p className="text-muted-foreground mt-2 max-w-2xl">
+                                    Analyze content and find visual similarities within your indexed image collection using advanced feature extraction.
                                 </p>
                             </div>
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8">
-                        <div className="lg:col-span-9 space-y-6 md:space-y-8">
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
+                        <div className="lg:col-span-8 xl:col-span-9 space-y-8">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8">
                                 <QueryImageUploader
                                     selectedImage={queryImage}

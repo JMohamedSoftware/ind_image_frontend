@@ -242,19 +242,65 @@ const SearchResultsVisualization = () => {
     return (
         <div className="min-h-screen bg-background">
             <HorizontalTabNavigation />
-            <div className="pt-20 md:pt-24 pb-8 md:pb-12">
-                <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <div className="mb-6 md:mb-8">
-                        <div className="flex flex-col md:flex-row md:items-center md:justify-between space-y-4 md:space-y-0">
+            <div className="pt-24 md:pt-32 pb-8 px-4">
+                <div className="fluid-container">
+                    <div className="mb-8 md:mb-12">
+                        <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-6">
+                            <div className="w-12 h-12 md:w-16 md:h-16 bg-primary/10 rounded-2xl flex items-center justify-center shadow-sm">
+                                <Icon name="BarChart3" size={32} color="var(--color-primary)" />
+                            </div>
                             <div>
-                                <h1 className="font-heading font-bold text-2xl md:text-3xl lg:text-4xl mb-2">
-                                    Search Results & Visualization
+                                <h1 className="text-foreground tracking-tight">
+                                    Similarity Analysis Results
                                 </h1>
-                                <p className="text-sm md:text-base text-muted-foreground">
-                                    Comprehensive analysis of visual similarity search outcomes with detailed comparisons
+                                <p className="text-muted-foreground mt-2 max-w-2xl">
+                                    Comprehensive breakdown of visual correlations, feature distribution, and multi-dimensional similarity mapping.
                                 </p>
                             </div>
+                        </div>
+                    </div>
 
+                    <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
+                        <div className="lg:col-span-12 xl:col-span-12 lg:mb-8">
+                            <div className="glass rounded-3xl p-6 md:p-8 flex flex-col md:flex-row gap-8 items-center border border-border/50 shadow-lg">
+                                <div className="w-full md:w-1/3 lg:w-1/4">
+                                    <div className="aspect-square rounded-2xl overflow-hidden shadow-inner ring-4 ring-primary/5">
+                                        <Image
+                                            src={queryImage.image}
+                                            alt={queryImage.imageAlt}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    </div>
+                                </div>
+                                <div className="flex-1 space-y-4 text-left">
+                                    <div className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-bold uppercase tracking-wider">
+                                        Query Target
+                                    </div>
+                                    <h2 className="text-2xl md:text-3xl font-heading font-bold text-foreground">
+                                        {queryImage.filename}
+                                    </h2>
+                                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-2">
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Dimensions</p>
+                                            <p className="font-data font-semibold">{queryImage.dimensions}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Features</p>
+                                            <p className="font-data font-semibold text-primary">{queryImage.keypoints}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Latency</p>
+                                            <p className="font-data font-semibold">{queryImage.processingTime}</p>
+                                        </div>
+                                        <div className="space-y-1">
+                                            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Method</p>
+                                            <p className="font-data font-semibold badge bg-primary/5">{queryImage.algorithm}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="lg:col-span-12 xl:col-span-12 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                             <div className="flex items-center space-x-3">
                                 <Button
                                     variant="outline"
@@ -273,11 +319,6 @@ const SearchResultsVisualization = () => {
                                     New Search
                                 </Button>
                             </div>
-                        </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 md:gap-8 mb-6 md:mb-8">
-                        <div className="lg:col-span-1">
                             <PipelineProgressIndicator
                                 uploadStatus="complete"
                                 searchStatus="complete"
@@ -285,11 +326,6 @@ const SearchResultsVisualization = () => {
                                 uploadProgress={100}
                                 searchProgress={100}
                                 resultsProgress={100} />
-
-                        </div>
-
-                        <div className="lg:col-span-3">
-                            <QueryImageDisplay queryImage={queryImage} />
                         </div>
                     </div>
 
