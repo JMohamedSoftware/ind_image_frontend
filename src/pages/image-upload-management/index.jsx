@@ -134,9 +134,9 @@ const ImageUploadManagement = () => {
         setImages(mockImages);
     }, []);
 
-    const API_BASE_URL = "http://localhost:8000";
-    const CLOUDINARY_UPLOAD_PRESET = "ml_default"; // Placeholder - User should change this
-    const CLOUDINARY_CLOUD_NAME = "demo"; // Placeholder - User should change this
+    const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+    const CLOUDINARY_UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || "ml_default";
+    const CLOUDINARY_CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || "demo";
 
     const uploadToCloudinary = async (file) => {
         const formData = new FormData();
