@@ -13,6 +13,7 @@ const VisualSearchInterface = () => {
     const navigate = useNavigate();
     const [queryImage, setQueryImage] = useState(null);
     const [isProcessing, setIsProcessing] = useState(false);
+    const [searchError, setSearchError] = useState(null);
     const [progress, setProgress] = useState(0);
     const [estimatedTime, setEstimatedTime] = useState(0);
     const [searchHistory] = useState([
@@ -61,6 +62,7 @@ const VisualSearchInterface = () => {
         if (!queryImage) return;
 
         setIsProcessing(true);
+        setSearchError(null);
         setProgress(10);
         setEstimatedTime(2);
 
@@ -78,6 +80,11 @@ const VisualSearchInterface = () => {
                 method: 'POST',
                 body: formData,
             });
+
+            if (!response.ok) {
+                const errData = await response.json().catch(() => ({}));
+                throw new Error(errData?.detail || `Server error: ${response.status}`);
+            }
 
             setProgress(70);
 
@@ -104,6 +111,7 @@ const VisualSearchInterface = () => {
             }, 500);
         } catch (error) {
             console.error('Search error:', error);
+            setSearchError(error.message || 'Something went wrong. Check that the backend is running.');
             setIsProcessing(false);
             setProgress(0);
         }
@@ -162,6 +170,15 @@ const VisualSearchInterface = () => {
                                         estimatedTime={estimatedTime}
                                         canSearch={!!queryImage}
                                     />
+                                    {searchError && (
+                                        <div className="mt-4 p-4 rounded-xl bg-destructive/10 border border-destructive/30 text-destructive flex items-start gap-3">
+                                            <Icon name="AlertCircle" size={18} className="mt-0.5 shrink-0" />
+                                            <div>
+                                                <p className="font-bold text-sm">Search Failed</p>
+                                                <p className="text-sm mt-0.5 opacity-90">{searchError}</p>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                                 <div className="md:col-span-1">
                                     <ValidationFeedback
