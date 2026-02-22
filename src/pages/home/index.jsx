@@ -6,11 +6,18 @@ const ALGORITHMS = [
         id: 'ORB',
         name: 'ORB',
         full: 'Oriented FAST & Rotated BRIEF',
-        color: '#a78bfa',
-        glow: 'rgba(167,139,250,0.4)',
-        badge: 'bg-violet-500/20 text-violet-300 border-violet-500/30',
-        ring: 'ring-violet-500',
-        description: 'Ultra-fast binary descriptor. Best for real-time use. Used in robotics and AR apps.',
+        accent: '#7c3aed',       // violet-700
+        light: '#f5f3ff',        // violet-50
+        border: '#ddd6fe',       // violet-200
+        text: '#5b21b6',         // violet-800
+        badge: 'Fast & Efficient',
+        description: 'Ultra-fast binary descriptor. Best for real-time use. Used in robotics & AR.',
+        how: [
+            { label: 'Detector', value: 'FAST corners', icon: '📍' },
+            { label: 'Descriptor', value: '256-bit binary string (BRIEF)', icon: '🧬' },
+            { label: 'Matching', value: 'Hamming distance (XOR)', icon: '⚡' },
+            { label: 'Scale invariant?', value: 'Partial (via pyramid)', icon: '🔭' },
+        ],
         speed: 5,
         accuracy: 3,
     },
@@ -18,11 +25,18 @@ const ALGORITHMS = [
         id: 'SIFT',
         name: 'SIFT',
         full: 'Scale-Invariant Feature Transform',
-        color: '#22d3ee',
-        glow: 'rgba(34,211,238,0.4)',
-        badge: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
-        ring: 'ring-cyan-500',
-        description: 'Highly accurate, scale & rotation invariant. The gold standard for feature matching.',
+        accent: '#0891b2',       // cyan-700
+        light: '#ecfeff',        // cyan-50
+        border: '#a5f3fc',       // cyan-200
+        text: '#0e7490',         // cyan-800
+        badge: 'Most Accurate',
+        description: 'Highly accurate, scale & rotation invariant. The gold standard for matching.',
+        how: [
+            { label: 'Detector', value: 'DoG (Difference of Gaussians)', icon: '🌀' },
+            { label: 'Descriptor', value: '128 float32 gradient histogram', icon: '📊' },
+            { label: 'Matching', value: 'L2 / Euclidean distance', icon: '🎯' },
+            { label: 'Scale invariant?', value: 'Full (multi-scale)', icon: '🔭' },
+        ],
         speed: 2,
         accuracy: 5,
     },
@@ -30,11 +44,18 @@ const ALGORITHMS = [
         id: 'AKAZE',
         name: 'AKAZE',
         full: 'Accelerated-KAZE',
-        color: '#fb923c',
-        glow: 'rgba(251,146,60,0.4)',
-        badge: 'bg-orange-500/20 text-orange-300 border-orange-500/30',
-        ring: 'ring-orange-500',
-        description: 'Great balance of speed and accuracy. Excellent for non-linear scale spaces.',
+        accent: '#c2410c',       // orange-700
+        light: '#fff7ed',        // orange-50
+        border: '#fed7aa',       // orange-200
+        text: '#9a3412',         // orange-800
+        badge: 'Balanced',
+        description: 'Great balance of speed and accuracy. Excellent for complex textures.',
+        how: [
+            { label: 'Detector', value: 'Nonlinear diffusion scale space', icon: '🌊' },
+            { label: 'Descriptor', value: 'M-LDB binary (486 bits)', icon: '🧬' },
+            { label: 'Matching', value: 'Hamming distance', icon: '⚡' },
+            { label: 'Scale invariant?', value: 'Yes (improved DoG)', icon: '🔭' },
+        ],
         speed: 4,
         accuracy: 4,
     },
@@ -44,117 +65,17 @@ const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 const CLOUDINARY_PRESET = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET || 'image_index';
 const CLOUDINARY_CLOUD = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME || 'demo';
 
-// ─── PARTICLE ANIMATION CANVAS ──────────────────────────────────────────────
-function ParticleCanvas() {
-    const canvasRef = useRef(null);
-    const particles = useRef([]);
-    const animRef = useRef(null);
-
-    useEffect(() => {
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext('2d');
-
-        const resize = () => {
-            canvas.width = canvas.offsetWidth;
-            canvas.height = canvas.offsetHeight;
-        };
-        resize();
-        window.addEventListener('resize', resize);
-
-        for (let i = 0; i < 80; i++) {
-            particles.current.push({
-                x: Math.random() * canvas.width,
-                y: Math.random() * canvas.height,
-                r: Math.random() * 1.5 + 0.5,
-                vx: (Math.random() - 0.5) * 0.3,
-                vy: (Math.random() - 0.5) * 0.3,
-                opacity: Math.random() * 0.5 + 0.2,
-                color: ['#a78bfa', '#22d3ee', '#fb923c'][Math.floor(Math.random() * 3)],
-            });
-        }
-
-        const draw = () => {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            particles.current.forEach((p, i) => {
-                p.x += p.vx;
-                p.y += p.vy;
-                if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
-                if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
-
-                ctx.beginPath();
-                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-                ctx.fillStyle = p.color;
-                ctx.globalAlpha = p.opacity;
-                ctx.fill();
-
-                // Draw lines to nearby particles
-                particles.current.slice(i + 1).forEach((p2) => {
-                    const dist = Math.hypot(p.x - p2.x, p.y - p2.y);
-                    if (dist < 100) {
-                        ctx.beginPath();
-                        ctx.moveTo(p.x, p.y);
-                        ctx.lineTo(p2.x, p2.y);
-                        ctx.strokeStyle = p.color;
-                        ctx.globalAlpha = (1 - dist / 100) * 0.15;
-                        ctx.lineWidth = 0.5;
-                        ctx.stroke();
-                    }
-                });
-                ctx.globalAlpha = 1;
-            });
-            animRef.current = requestAnimationFrame(draw);
-        };
-        draw();
-
-        return () => {
-            window.removeEventListener('resize', resize);
-            cancelAnimationFrame(animRef.current);
-        };
-    }, []);
-
-    return <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />;
-}
-
-// ─── SCORE BAR ───────────────────────────────────────────────────────────────
-function ScoreBar({ score, color }) {
+// ─── SPEED/ACCURACY DOTS ─────────────────────────────────────────────────────
+function Dots({ score, color }) {
     return (
-        <div className="flex items-center gap-2">
-            {[1, 2, 3, 4, 5].map((i) => (
+        <div className="flex gap-1">
+            {[1, 2, 3, 4, 5].map(i => (
                 <div
                     key={i}
-                    className="h-1.5 flex-1 rounded-full transition-all duration-500"
-                    style={{ background: i <= score ? color : 'rgba(255,255,255,0.1)' }}
-                />
-            ))}
-        </div>
-    );
-}
-
-// ─── KEYPOINT OVERLAY ────────────────────────────────────────────────────────
-function KeypointOverlay({ show, color }) {
-    const dots = Array.from({ length: 20 }, (_, i) => ({
-        x: `${10 + Math.sin(i * 1.7 + 1) * 35 + 35}%`,
-        y: `${10 + Math.cos(i * 2.3 + 0.5) * 35 + 35}%`,
-        delay: i * 80,
-    }));
-
-    if (!show) return null;
-
-    return (
-        <div className="absolute inset-0 pointer-events-none">
-            {dots.map((d, i) => (
-                <div
-                    key={i}
-                    className="absolute w-2 h-2 rounded-full border-2 animate-ping-once"
+                    className="w-2.5 h-2.5 rounded-full border-2 transition-all"
                     style={{
-                        left: d.x,
-                        top: d.y,
-                        borderColor: color,
-                        background: color + '40',
-                        animationDelay: d.delay + 'ms',
-                        opacity: 0,
-                        animation: `fadeInDot 0.3s ${d.delay}ms ease-out forwards`,
+                        background: i <= score ? color : 'transparent',
+                        borderColor: i <= score ? color : '#d1d5db',
                     }}
                 />
             ))}
@@ -162,37 +83,86 @@ function KeypointOverlay({ show, color }) {
     );
 }
 
+// ─── PROCESS LOG PANEL ───────────────────────────────────────────────────────
+function ProcessLog({ steps, accent }) {
+    return (
+        <div className="mt-3 rounded-xl border p-4 bg-white text-sm space-y-2" style={{ borderColor: accent + '30' }}>
+            {steps.map((s, i) => (
+                <div key={i} className="flex items-start gap-3">
+                    <div
+                        className="mt-0.5 w-5 h-5 rounded-full flex items-center justify-center text-white text-xs font-bold shrink-0"
+                        style={{ background: accent }}
+                    >
+                        {i + 1}
+                    </div>
+                    <div>
+                        <span className="font-semibold text-gray-800">{s.label}: </span>
+                        <span className="text-gray-600">{s.value}</span>
+                        {s.extra && <div className="text-xs text-gray-400 mt-0.5">{s.extra}</div>}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+}
+
 // ─── INDEXED IMAGE CARD ───────────────────────────────────────────────────────
 function IndexedCard({ image, algo }) {
-    const [stage, setStage] = useState('uploading'); // uploading | extracting | done
+    const [stage, setStage] = useState('uploading');
 
     useEffect(() => {
-        const t1 = setTimeout(() => setStage('extracting'), 600);
-        const t2 = setTimeout(() => setStage('done'), 1600);
+        const t1 = setTimeout(() => setStage('extracting'), 700);
+        const t2 = setTimeout(() => setStage('done'), 1800);
         return () => { clearTimeout(t1); clearTimeout(t2); };
     }, []);
 
-    const stageLabel = { uploading: 'Uploading...', extracting: 'Extracting features...', done: `Indexed ✓ (${image.keypoints} keypoints)` };
-    const stageColor = { uploading: '#60a5fa', extracting: algo.color, done: '#4ade80' };
+    const stageColor = { uploading: '#6b7280', extracting: algo.accent, done: '#16a34a' };
+    const stageLabel = { uploading: 'Uploading…', extracting: `Running ${algo.id}…`, done: 'Indexed ✓' };
+    const progressPct = { uploading: 35, extracting: 75, done: 100 };
+
+    const logSteps = stage === 'done' && image.keypoints > 0 ? [
+        { label: 'Step 1', value: `Loaded image pixels`, extra: 'Converted to grayscale for processing' },
+        { label: 'Step 2', value: `Detected keypoints with ${algo.id}`, extra: `${image.keypoints} keypoints found` },
+        { label: 'Step 3', value: `Computed descriptors`, extra: algo.id === 'SIFT' ? `${image.keypoints} × 128 float32 vectors` : `${image.keypoints} × ${algo.id === 'AKAZE' ? '61 bytes (M-LDB)' : '32 bytes (BRIEF)'} binary strings` },
+        { label: 'Step 4', value: `Stored in index`, extra: 'Ready for similarity search' },
+    ] : null;
 
     return (
-        <div className="relative rounded-2xl overflow-hidden bg-white/5 border border-white/10 group transition-all duration-500 hover:border-white/20">
-            <img src={image.preview} alt={image.name} className="w-full aspect-square object-cover" />
-            <KeypointOverlay show={stage === 'extracting' || stage === 'done'} color={algo.color} />
-            <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/80 to-transparent">
-                <p className="text-xs truncate" style={{ color: stageColor[stage] }}>
-                    {stageLabel[stage]}
-                </p>
-                {stage !== 'done' && (
-                    <div className="mt-1 h-0.5 rounded-full bg-white/10 overflow-hidden">
-                        <div
-                            className="h-full rounded-full transition-all duration-1000"
-                            style={{
-                                width: stage === 'uploading' ? '40%' : '100%',
-                                background: stageColor[stage],
-                            }}
-                        />
+        <div className="rounded-2xl border bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow" style={{ borderColor: stage === 'done' ? algo.border : '#e5e7eb' }}>
+            <div className="relative">
+                <img src={image.preview} alt={image.name} className="w-full aspect-square object-cover" />
+                {stage === 'extracting' && (
+                    <div className="absolute inset-0 flex items-center justify-center" style={{ background: algo.accent + '20' }}>
+                        <div className="text-white text-xs font-bold px-3 py-1.5 rounded-full" style={{ background: algo.accent }}>
+                            ⚙️ {algo.id} scanning…
+                        </div>
                     </div>
+                )}
+                {stage === 'done' && (
+                    <div className="absolute top-2 right-2 w-7 h-7 rounded-full bg-green-500 flex items-center justify-center text-white text-sm font-bold shadow-md">✓</div>
+                )}
+            </div>
+
+            {/* Stage progress bar */}
+            <div className="h-1.5" style={{ background: '#f3f4f6' }}>
+                <div
+                    className="h-full rounded-r-full transition-all duration-700"
+                    style={{ width: progressPct[stage] + '%', background: stageColor[stage] }}
+                />
+            </div>
+
+            <div className="p-3">
+                <p className="text-xs text-gray-500 truncate">{image.name}</p>
+                <p className="text-xs font-semibold mt-0.5" style={{ color: stageColor[stage] }}>{stageLabel[stage]}</p>
+
+                {/* Expandable log after done */}
+                {stage === 'done' && logSteps && (
+                    <details className="mt-2">
+                        <summary className="text-xs cursor-pointer font-medium" style={{ color: algo.accent }}>
+                            See algorithm details ↓
+                        </summary>
+                        <ProcessLog steps={logSteps} accent={algo.accent} />
+                    </details>
                 )}
             </div>
         </div>
@@ -202,57 +172,69 @@ function IndexedCard({ image, algo }) {
 // ─── SEARCH RESULT CARD ───────────────────────────────────────────────────────
 function ResultCard({ result, algo, rank }) {
     const score = result.similarityScore;
-    const scoreColor = score > 70 ? '#4ade80' : score > 40 ? '#facc15' : '#f87171';
+    const scoreColor = score > 65 ? '#16a34a' : score > 35 ? '#ca8a04' : '#dc2626';
 
     return (
-        <div
-            className="relative rounded-2xl overflow-hidden bg-white/5 border border-white/10 hover:border-white/25 transition-all duration-300 group"
-            style={{ animationDelay: rank * 100 + 'ms' }}
-        >
-            {result.url ? (
-                <img src={result.url} alt={result.filename} className="w-full aspect-square object-cover" />
-            ) : (
-                <div className="w-full aspect-square bg-white/10 flex items-center justify-center text-4xl">🖼️</div>
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            <div className="absolute top-2 right-2">
+        <div className="rounded-2xl border bg-white overflow-hidden shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5">
+            <div className="relative">
+                {result.url ? (
+                    <img src={result.url} alt={result.filename} className="w-full aspect-square object-cover" />
+                ) : (
+                    <div className="w-full aspect-square bg-gray-100 flex items-center justify-center text-4xl">🖼️</div>
+                )}
                 <div
-                    className="px-2 py-1 rounded-full text-xs font-bold border"
-                    style={{ background: scoreColor + '20', color: scoreColor, borderColor: scoreColor + '50' }}
+                    className="absolute top-2 right-2 px-2.5 py-1 rounded-full text-xs font-bold text-white shadow"
+                    style={{ background: scoreColor }}
                 >
                     {score.toFixed(0)}%
                 </div>
-            </div>
-            <div className="absolute bottom-0 left-0 right-0 p-3">
-                <div className="h-1 rounded-full bg-white/10 overflow-hidden">
-                    <div
-                        className="h-full rounded-full transition-all duration-1000"
-                        style={{ width: score + '%', background: scoreColor }}
-                    />
+                <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-white/90 flex items-center justify-center text-xs font-bold text-gray-600 shadow">
+                    #{rank + 1}
                 </div>
-                <p className="text-xs text-white/60 mt-1 truncate">{result.filename}</p>
-                <p className="text-xs mt-0.5" style={{ color: algo.color }}>{result.matchesCount} matches</p>
+            </div>
+
+            {/* Similarity bar */}
+            <div className="h-1.5 bg-gray-100">
+                <div className="h-full rounded-r-full transition-all duration-700" style={{ width: score + '%', background: scoreColor }} />
+            </div>
+
+            <div className="p-3">
+                <p className="text-xs text-gray-500 truncate">{result.filename}</p>
+                <div className="mt-2 space-y-1">
+                    <details>
+                        <summary className="text-xs cursor-pointer font-medium" style={{ color: algo.accent }}>
+                            Matching details ↓
+                        </summary>
+                        <ProcessLog
+                            steps={[
+                                { label: 'Algorithm used', value: algo.name + ' — ' + algo.full },
+                                { label: 'Descriptor comparison', value: `${algo.id === 'SIFT' ? 'L2 (Euclidean)' : 'Hamming (XOR)'}`, extra: algo.id === 'SIFT' ? 'Lower distance = more similar float vectors' : 'Fewer different bits = more similar binary strings' },
+                                { label: 'Good matches found', value: `${result.matchesCount} pairs (distance < 60)`, extra: 'Pairs with low distance are considered "good"' },
+                                { label: 'Similarity score', value: `${score.toFixed(1)}%`, extra: '(goodMatches / queryKeypoints) × scale factor' },
+                            ]}
+                            accent={algo.accent}
+                        />
+                    </details>
+                </div>
             </div>
         </div>
     );
 }
 
-// ─── PIPELINE STEP ────────────────────────────────────────────────────────────
-function PipelineStep({ icon, label, active, done, color }) {
+// ─── PIPELINE BADGE ──────────────────────────────────────────────────────────
+function StageBadge({ label, active, done, accent }) {
     return (
-        <div className={`flex flex-col items-center gap-1 transition-all duration-500 ${active || done ? 'opacity-100' : 'opacity-30'}`}>
-            <div
-                className={`w-10 h-10 rounded-full flex items-center justify-center text-lg border-2 transition-all duration-500 ${active ? 'animate-pulse' : ''}`}
-                style={{
-                    borderColor: done ? '#4ade80' : active ? color : 'rgba(255,255,255,0.15)',
-                    background: done ? '#4ade8015' : active ? color + '20' : 'transparent',
-                    boxShadow: active ? `0 0 20px ${color}60` : 'none',
-                }}
-            >
-                {done ? '✓' : icon}
-            </div>
-            <span className="text-xs text-white/60 whitespace-nowrap">{label}</span>
-        </div>
+        <span
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-all duration-300"
+            style={{
+                background: done ? '#f0fdf4' : active ? accent + '15' : '#f9fafb',
+                borderColor: done ? '#86efac' : active ? accent : '#e5e7eb',
+                color: done ? '#16a34a' : active ? accent : '#9ca3af',
+            }}
+        >
+            {done ? '✓' : active ? <span className="animate-spin text-xs">⏳</span> : '○'}
+            {label}
+        </span>
     );
 }
 
@@ -262,19 +244,18 @@ export default function HomePage() {
     const [indexedImages, setIndexedImages] = useState([]);
     const [queryImage, setQueryImage] = useState(null);
     const [searchResults, setSearchResults] = useState(null);
+    const [searchError, setSearchError] = useState(null);
     const [isSearching, setIsSearching] = useState(false);
-    const [searchStage, setSearchStage] = useState(0); // 0=idle 1=extracting 2=matching 3=ranking 4=done
+    const [searchStage, setSearchStage] = useState(0);
     const [isDraggingIndex, setIsDraggingIndex] = useState(false);
     const [isDraggingSearch, setIsDraggingSearch] = useState(false);
-    const indexDropRef = useRef(null);
-    const searchDropRef = useRef(null);
+    const indexInputRef = useRef(null);
+    const searchInputRef = useRef(null);
 
-    // ── Upload to Cloudinary then index ─────────────────────────────────────────
     const uploadAndIndex = useCallback(async (file) => {
         const preview = URL.createObjectURL(file);
         const tempId = Date.now() + Math.random();
-        const placeholder = { id: tempId, preview, name: file.name, keypoints: 0, pending: true };
-        setIndexedImages(prev => [...prev, placeholder]);
+        setIndexedImages(prev => [...prev, { id: tempId, preview, name: file.name, keypoints: 0, pending: true }]);
 
         try {
             // 1. Upload to Cloudinary
@@ -287,12 +268,8 @@ export default function HomePage() {
 
             // 2. Index via backend
             const idxForm = new FormData();
-            if (imageUrl) {
-                idxForm.append('url', imageUrl);
-                idxForm.append('filename', file.name);
-            } else {
-                idxForm.append('file', file);
-            }
+            if (imageUrl) { idxForm.append('url', imageUrl); idxForm.append('filename', file.name); }
+            else { idxForm.append('file', file); }
             idxForm.append('algorithm', algo.id);
 
             const idxRes = await fetch(`${API_BASE}/api/index`, { method: 'POST', body: idxForm });
@@ -309,18 +286,19 @@ export default function HomePage() {
         }
     }, [algo]);
 
-    const handleIndexDrop = useCallback((e) => {
+    const handleIndexFiles = useCallback((e) => {
         e.preventDefault();
         setIsDraggingIndex(false);
         const files = Array.from(e.dataTransfer?.files || e.target?.files || []);
         files.filter(f => f.type.startsWith('image/')).forEach(uploadAndIndex);
+        if (e.target) e.target.value = '';
     }, [uploadAndIndex]);
 
-    // ── Search ───────────────────────────────────────────────────────────────────
     const handleSearch = useCallback(async () => {
         if (!queryImage) return;
         setIsSearching(true);
         setSearchResults(null);
+        setSearchError(null);
         setSearchStage(1);
 
         try {
@@ -329,24 +307,19 @@ export default function HomePage() {
             formData.append('file', blob, queryImage.name);
             formData.append('algorithm', algo.id);
 
-            setTimeout(() => setSearchStage(2), 800);
-            setTimeout(() => setSearchStage(3), 1500);
+            setTimeout(() => setSearchStage(2), 900);
+            setTimeout(() => setSearchStage(3), 1700);
 
             const res = await fetch(`${API_BASE}/api/search`, { method: 'POST', body: formData });
             if (!res.ok) throw new Error(`Server error: ${res.status}`);
             const data = await res.json();
 
             setSearchStage(4);
-            setTimeout(() => {
-                setSearchResults(data);
-                setIsSearching(false);
-                setSearchStage(0);
-            }, 600);
+            setTimeout(() => { setSearchResults(data); setIsSearching(false); setSearchStage(0); }, 500);
         } catch (err) {
-            console.error('Search error:', err);
+            setSearchError(err.message);
             setIsSearching(false);
             setSearchStage(0);
-            setSearchResults({ error: err.message });
         }
     }, [queryImage, algo]);
 
@@ -354,10 +327,12 @@ export default function HomePage() {
         e.preventDefault();
         setIsDraggingSearch(false);
         const file = (e.dataTransfer?.files || e.target?.files)?.[0];
-        if (file && file.type.startsWith('image/')) {
+        if (file?.type.startsWith('image/')) {
             setQueryImage({ preview: URL.createObjectURL(file), name: file.name });
             setSearchResults(null);
+            setSearchError(null);
         }
+        if (e.target) e.target.value = '';
     }, []);
 
     const clearIndex = async () => {
@@ -366,377 +341,331 @@ export default function HomePage() {
         setSearchResults(null);
     };
 
-    const pipelineStages = [
-        { icon: '📤', label: 'Upload' },
-        { icon: '🔍', label: 'Extract' },
-        { icon: '🧮', label: 'Match' },
-        { icon: '🏆', label: 'Rank' },
-    ];
+    const searchPipelineStages = ['Extract features', 'Compare descriptors', 'Rank results'];
 
     return (
-        <div className="min-h-screen bg-[#0a0e1a] text-white font-sans" style={{ fontFamily: "'Inter', sans-serif" }}>
+        <div className="min-h-screen bg-gray-50 text-gray-900" style={{ fontFamily: "'Inter', sans-serif" }}>
 
-            {/* ── Section 1: Hero ─────────────────────────────────────────────── */}
-            <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-4 text-center">
-                <ParticleCanvas />
-                <div className="relative z-10 max-w-4xl mx-auto">
-                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 text-sm text-white/60 mb-6">
-                        <span className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
-                        Open-source · Educational · Interactive
+            {/* ── Hero ─────────────────────────────────────────────────────────── */}
+            <header className="bg-white border-b border-gray-200 shadow-sm">
+                <div className="max-w-5xl mx-auto px-4 py-12 text-center">
+                    <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-50 border border-violet-200 text-violet-700 text-xs font-semibold mb-6">
+                        🎓 Educational Demo — Computer Vision
                     </div>
-                    <h1 className="text-5xl md:text-7xl font-black tracking-tight mb-6 leading-none">
-                        How does{' '}
-                        <span
-                            className="bg-clip-text text-transparent"
-                            style={{ backgroundImage: `linear-gradient(135deg, ${ALGORITHMS[0].color}, ${ALGORITHMS[1].color}, ${ALGORITHMS[2].color})` }}
-                        >
-                            Image Search
-                        </span>{' '}
-                        Work?
+                    <h1 className="text-4xl md:text-6xl font-black tracking-tight text-gray-900 mb-4">
+                        How does <span style={{ color: algo.accent }}>Image Search</span> Work?
                     </h1>
-                    <p className="text-lg md:text-xl text-white/50 max-w-2xl mx-auto mb-10 leading-relaxed">
-                        An interactive, visual explanation of feature extraction, descriptor matching, and similarity ranking — pick an algorithm and try it live.
+                    <p className="text-lg text-gray-500 max-w-2xl mx-auto leading-relaxed">
+                        Upload images, pick an algorithm, and watch the system extract features, build an index, and find similar images — step by step.
                     </p>
-                    <a
-                        href="#algorithms"
-                        className="inline-flex items-center gap-2 px-8 py-4 rounded-full text-white font-bold text-lg transition-all duration-300 hover:scale-105"
-                        style={{
-                            background: `linear-gradient(135deg, ${ALGORITHMS[0].color}, ${ALGORITHMS[1].color})`,
-                            boxShadow: `0 0 40px ${ALGORITHMS[0].glow}`,
-                        }}
-                    >
-                        Start Exploring ↓
-                    </a>
-                </div>
-            </section>
-
-            {/* ── Section 2: Algorithm Selector ───────────────────────────────── */}
-            <section id="algorithms" className="py-24 px-4 max-w-5xl mx-auto">
-                <div className="text-center mb-14">
-                    <p className="text-sm font-bold uppercase tracking-widest mb-3" style={{ color: algo.color }}>Step 0</p>
-                    <h2 className="text-4xl font-black mb-4">Choose Your Algorithm</h2>
-                    <p className="text-white/50 max-w-xl mx-auto">Each algorithm detects and describes image features differently. Select one — it changes how indexing and search work.</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    {ALGORITHMS.map((a) => {
-                        const isSelected = algo.id === a.id;
-                        return (
-                            <button
-                                key={a.id}
-                                onClick={() => setAlgo(a)}
-                                className={`relative p-6 rounded-3xl border-2 text-left transition-all duration-400 hover:scale-105 ${isSelected ? a.ring : 'border-white/10'}`}
-                                style={{
-                                    background: isSelected ? a.color + '15' : 'rgba(255,255,255,0.03)',
-                                    borderColor: isSelected ? a.color : 'rgba(255,255,255,0.1)',
-                                    boxShadow: isSelected ? `0 0 40px ${a.glow}` : 'none',
-                                }}
-                            >
-                                {isSelected && (
-                                    <div className="absolute top-4 right-4 w-3 h-3 rounded-full animate-pulse" style={{ background: a.color }} />
-                                )}
-                                <div className="text-3xl font-black mb-2" style={{ color: a.color }}>{a.name}</div>
-                                <div className="text-xs text-white/40 mb-3">{a.full}</div>
-                                <p className="text-sm text-white/70 mb-5 leading-relaxed">{a.description}</p>
-                                <div className="space-y-2">
-                                    <div>
-                                        <div className="flex justify-between text-xs text-white/40 mb-1"><span>Speed</span><span>{a.speed}/5</span></div>
-                                        <ScoreBar score={a.speed} color={a.color} />
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between text-xs text-white/40 mb-1"><span>Accuracy</span><span>{a.accuracy}/5</span></div>
-                                        <ScoreBar score={a.accuracy} color={a.color} />
-                                    </div>
-                                </div>
-                                {isSelected && (
-                                    <div className="mt-4 text-center">
-                                        <span className="text-xs font-bold px-3 py-1 rounded-full border" style={{ color: a.color, borderColor: a.color + '50', background: a.color + '10' }}>
-                                            ✓ Selected
-                                        </span>
-                                    </div>
-                                )}
-                            </button>
-                        );
-                    })}
-                </div>
-
-                {/* How this algo works */}
-                <div
-                    className="mt-8 p-6 rounded-2xl border transition-all duration-500"
-                    style={{ borderColor: algo.color + '40', background: algo.color + '08' }}
-                >
-                    <h3 className="font-bold mb-3" style={{ color: algo.color }}>How {algo.name} finds features:</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-white/70">
-                        {algo.id === 'ORB' && <>
-                            <div className="p-3 bg-white/5 rounded-xl"><span className="font-bold text-white">1. FAST Detector</span><br />Finds corner-like points by checking pixel ring brightness.</div>
-                            <div className="p-3 bg-white/5 rounded-xl"><span className="font-bold text-white">2. BRIEF Descriptor</span><br />Creates a 256-bit binary string per keypoint by comparing pixel pairs.</div>
-                            <div className="p-3 bg-white/5 rounded-xl"><span className="font-bold text-white">3. Hamming Distance</span><br />Matching done with XOR — extremely fast on modern CPUs.</div>
-                        </>}
-                        {algo.id === 'SIFT' && <>
-                            <div className="p-3 bg-white/5 rounded-xl"><span className="font-bold text-white">1. DoG Scale Space</span><br />Applies Gaussian blurs at multiple scales to find stable interest points.</div>
-                            <div className="p-3 bg-white/5 rounded-xl"><span className="font-bold text-white">2. 128-dim Gradient</span><br />Builds a histogram of image gradients around each keypoint.</div>
-                            <div className="p-3 bg-white/5 rounded-xl"><span className="font-bold text-white">3. L2 Distance</span><br />Euclidean distance between float vectors — very accurate but slower.</div>
-                        </>}
-                        {algo.id === 'AKAZE' && <>
-                            <div className="p-3 bg-white/5 rounded-xl"><span className="font-bold text-white">1. Non-linear Scale Space</span><br />Uses diffusion equations instead of Gaussians for sharper edges.</div>
-                            <div className="p-3 bg-white/5 rounded-xl"><span className="font-bold text-white">2. M-LDB Descriptor</span><br />Modified Local Difference Binary — compact and invariant.</div>
-                            <div className="p-3 bg-white/5 rounded-xl"><span className="font-bold text-white">3. Hamming Distance</span><br />Fast binary matching like ORB, but more accurate on complex textures.</div>
-                        </>}
+                    <div className="flex flex-wrap gap-3 justify-center mt-8">
+                        {['🔍 Feature Extraction', '🧬 Descriptor Matching', '📊 Similarity Ranking'].map(t => (
+                            <span key={t} className="px-4 py-2 rounded-full bg-gray-100 text-gray-600 text-sm font-medium">{t}</span>
+                        ))}
                     </div>
                 </div>
-            </section>
+            </header>
 
-            {/* ── Section 3: Step 1 — Index ───────────────────────────────────── */}
-            <section className="py-24 px-4 max-w-5xl mx-auto border-t border-white/5">
-                <div className="text-center mb-14">
-                    <p className="text-sm font-bold uppercase tracking-widest mb-3" style={{ color: algo.color }}>Step 1</p>
-                    <h2 className="text-4xl font-black mb-4">Build the Index</h2>
-                    <p className="text-white/50 max-w-xl mx-auto">
-                        Drop images here. The system will extract <strong style={{ color: algo.color }}>{algo.name}</strong> keypoints from each one and store their descriptors in memory.
-                    </p>
-                </div>
+            <main className="max-w-5xl mx-auto px-4 py-12 space-y-16">
 
-                {/* Drop zone */}
-                <div
-                    ref={indexDropRef}
-                    onDragOver={(e) => { e.preventDefault(); setIsDraggingIndex(true); }}
-                    onDragLeave={() => setIsDraggingIndex(false)}
-                    onDrop={handleIndexDrop}
-                    onClick={() => indexDropRef.current?.querySelector('input')?.click()}
-                    className="relative cursor-pointer rounded-3xl border-2 border-dashed p-12 text-center transition-all duration-300"
-                    style={{
-                        borderColor: isDraggingIndex ? algo.color : 'rgba(255,255,255,0.15)',
-                        background: isDraggingIndex ? algo.color + '10' : 'rgba(255,255,255,0.02)',
-                        boxShadow: isDraggingIndex ? `0 0 40px ${algo.glow}` : 'none',
-                    }}
-                >
-                    <input type="file" accept="image/*" multiple className="hidden" onChange={handleIndexDrop} />
-                    <div className="text-5xl mb-4">{isDraggingIndex ? '✨' : '📁'}</div>
-                    <p className="text-lg font-bold mb-2">Drop images here</p>
-                    <p className="text-sm text-white/40">or click to select · any format · multiple files OK</p>
-                    {indexedImages.length > 0 && (
-                        <div
-                            className="absolute top-4 right-4 px-3 py-1 rounded-full text-sm font-bold"
-                            style={{ background: algo.color + '20', color: algo.color }}
-                        >
-                            {indexedImages.filter(i => !i.pending).length} indexed
+                {/* ── Step 0: Choose Algorithm ─────────────────────────────────── */}
+                <section>
+                    <div className="flex items-center gap-3 mb-8">
+                        <div className="w-10 h-10 rounded-full bg-gray-900 text-white flex items-center justify-center font-black text-lg">0</div>
+                        <div>
+                            <h2 className="text-2xl font-black">Choose an Algorithm</h2>
+                            <p className="text-gray-500 text-sm">This determines how keypoints are detected and described</p>
                         </div>
-                    )}
-                </div>
+                    </div>
 
-                {/* Image grid */}
-                {indexedImages.length > 0 && (
-                    <div className="mt-8">
-                        <div className="flex items-center justify-between mb-4">
-                            <h3 className="font-bold text-white/70">Indexed Images</h3>
-                            <button onClick={clearIndex} className="text-xs text-red-400/70 hover:text-red-400 transition-colors px-3 py-1 rounded-full border border-red-400/20 hover:border-red-400/50">
-                                Clear all
-                            </button>
-                        </div>
-                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3">
-                            {indexedImages.map(img => (
-                                <IndexedCard key={img.id} image={img} algo={algo} />
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+                        {ALGORITHMS.map(a => {
+                            const sel = algo.id === a.id;
+                            return (
+                                <button
+                                    key={a.id}
+                                    onClick={() => setAlgo(a)}
+                                    className="text-left rounded-2xl border-2 p-6 transition-all duration-200 hover:shadow-md hover:-translate-y-0.5"
+                                    style={{
+                                        borderColor: sel ? a.accent : '#e5e7eb',
+                                        background: sel ? a.light : 'white',
+                                        boxShadow: sel ? `0 0 0 3px ${a.accent}25` : undefined,
+                                    }}
+                                >
+                                    <div className="flex items-start justify-between mb-3">
+                                        <div>
+                                            <span className="text-2xl font-black" style={{ color: a.accent }}>{a.name}</span>
+                                            {sel && <span className="ml-2 text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ background: a.accent }}>Selected</span>}
+                                        </div>
+                                        <span className="text-xs font-semibold px-2 py-1 rounded-full border" style={{ background: a.light, borderColor: a.border, color: a.text }}>{a.badge}</span>
+                                    </div>
+                                    <p className="text-gray-400 text-xs mb-1">{a.full}</p>
+                                    <p className="text-gray-700 text-sm mb-5 leading-relaxed">{a.description}</p>
+                                    <div className="space-y-2.5">
+                                        <div>
+                                            <div className="flex justify-between text-xs text-gray-400 mb-1"><span>Speed</span><span>{a.speed}/5</span></div>
+                                            <Dots score={a.speed} color={a.accent} />
+                                        </div>
+                                        <div>
+                                            <div className="flex justify-between text-xs text-gray-400 mb-1"><span>Accuracy</span><span>{a.accuracy}/5</span></div>
+                                            <Dots score={a.accuracy} color={a.accent} />
+                                        </div>
+                                    </div>
+                                </button>
+                            );
+                        })}
+                    </div>
+
+                    {/* Algorithm internals */}
+                    <div className="mt-6 rounded-2xl border p-6" style={{ borderColor: algo.border, background: algo.light }}>
+                        <h3 className="font-bold mb-4" style={{ color: algo.text }}>How {algo.name} works internally:</h3>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                            {algo.how.map(h => (
+                                <div key={h.label} className="bg-white rounded-xl border p-3" style={{ borderColor: algo.border }}>
+                                    <div className="text-xl mb-1">{h.icon}</div>
+                                    <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">{h.label}</div>
+                                    <div className="text-sm font-semibold mt-0.5" style={{ color: algo.text }}>{h.value}</div>
+                                </div>
                             ))}
                         </div>
                     </div>
-                )}
-            </section>
+                </section>
 
-            {/* ── Section 4: Step 2 — Search ──────────────────────────────────── */}
-            <section className="py-24 px-4 max-w-5xl mx-auto border-t border-white/5">
-                <div className="text-center mb-14">
-                    <p className="text-sm font-bold uppercase tracking-widest mb-3" style={{ color: algo.color }}>Step 2</p>
-                    <h2 className="text-4xl font-black mb-4">Search for Similar Images</h2>
-                    <p className="text-white/50 max-w-xl mx-auto">
-                        Upload a query image. The system extracts its features and compares them against your index using <strong style={{ color: algo.color }}>{algo.name}</strong>.
-                    </p>
-                </div>
+                {/* ── Step 1: Index ────────────────────────────────────────────── */}
+                <section>
+                    <div className="flex items-center gap-3 mb-8">
+                        <div className="w-10 h-10 rounded-full text-white flex items-center justify-center font-black text-lg" style={{ background: algo.accent }}>1</div>
+                        <div>
+                            <h2 className="text-2xl font-black">Index Images</h2>
+                            <p className="text-gray-500 text-sm">Upload images to build a searchable database using <strong style={{ color: algo.accent }}>{algo.name}</strong></p>
+                        </div>
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                    {/* Query drop zone */}
-                    <div>
-                        <h3 className="font-bold mb-4 text-white/70">Query Image</h3>
-                        <div
-                            ref={searchDropRef}
-                            onDragOver={(e) => { e.preventDefault(); setIsDraggingSearch(true); }}
-                            onDragLeave={() => setIsDraggingSearch(false)}
-                            onDrop={handleSearchFileDrop}
-                            onClick={() => searchDropRef.current?.querySelector('input')?.click()}
-                            className="relative cursor-pointer rounded-3xl border-2 border-dashed overflow-hidden transition-all duration-300"
-                            style={{
-                                borderColor: isDraggingSearch ? algo.color : queryImage ? algo.color + '60' : 'rgba(255,255,255,0.15)',
-                                background: 'rgba(255,255,255,0.02)',
-                                boxShadow: isDraggingSearch ? `0 0 40px ${algo.glow}` : 'none',
-                            }}
-                        >
-                            <input type="file" accept="image/*" className="hidden" onChange={handleSearchFileDrop} />
-                            {queryImage ? (
-                                <>
-                                    <img src={queryImage.preview} alt={queryImage.name} className="w-full aspect-square object-cover" />
-                                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-4">
-                                        <p className="text-xs text-white/80 truncate">{queryImage.name}</p>
+                    <div
+                        onClick={() => indexInputRef.current?.click()}
+                        onDragOver={e => { e.preventDefault(); setIsDraggingIndex(true); }}
+                        onDragLeave={() => setIsDraggingIndex(false)}
+                        onDrop={handleIndexFiles}
+                        className="cursor-pointer rounded-2xl border-2 border-dashed p-10 text-center transition-all duration-200"
+                        style={{
+                            borderColor: isDraggingIndex ? algo.accent : '#d1d5db',
+                            background: isDraggingIndex ? algo.light : 'white',
+                        }}
+                    >
+                        <input ref={indexInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleIndexFiles} />
+                        <div className="text-4xl mb-3">{isDraggingIndex ? '✨' : '📁'}</div>
+                        <p className="font-bold text-gray-700 mb-1">Drop images here or click to select</p>
+                        <p className="text-sm text-gray-400">Any format · Multiple files · {algo.name} will extract features</p>
+                    </div>
+
+                    {indexedImages.length > 0 && (
+                        <div className="mt-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="font-bold text-gray-700">
+                                    Indexed Images
+                                    <span className="ml-2 px-2 py-0.5 rounded-full text-xs font-bold text-white" style={{ background: algo.accent }}>
+                                        {indexedImages.filter(i => !i.pending).length}
+                                    </span>
+                                </h3>
+                                <button onClick={clearIndex} className="text-xs text-red-500 hover:text-red-700 border border-red-200 hover:border-red-400 px-3 py-1 rounded-full transition-colors">
+                                    Clear all
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                {indexedImages.map(img => <IndexedCard key={img.id} image={img} algo={algo} />)}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* What happens during indexing — always visible */}
+                    <div className="mt-6 rounded-2xl border border-gray-200 bg-white p-6">
+                        <h3 className="font-bold text-gray-800 mb-4">🔬 What happens when you index an image with {algo.name}?</h3>
+                        <div className="space-y-3">
+                            {[
+                                { n: 1, title: 'Load & Preprocess', desc: `The image is decoded and converted to grayscale. ${algo.id === 'SIFT' ? 'SIFT also creates a Gaussian pyramid at multiple scales.' : 'ORB and AKAZE build an image pyramid for scale handling.'}` },
+                                { n: 2, title: 'Detect Keypoints', desc: `${algo.id === 'ORB' ? 'FAST algorithm checks each pixel: if enough surrounding pixels are brighter/darker, it\'s a corner.' : algo.id === 'SIFT' ? 'DoG (Difference of Gaussians) finds stable extrema across scales.' : 'Nonlinear diffusion finds stable structures that resist noise.'}` },
+                                { n: 3, title: 'Compute Descriptors', desc: `${algo.id === 'ORB' ? 'BRIEF samples pixel pairs around each keypoint and encodes comparisons into a 256-bit binary string.' : algo.id === 'SIFT' ? 'Computes gradient histograms in a 4×4 grid around each keypoint → 128 float values.' : 'M-LDB computes binary comparisons in a local grid → 486-bit vector.'}` },
+                                { n: 4, title: 'Store in Index', desc: 'All descriptors are saved to memory (and disk via pickle). The index is now ready for similarity search.' },
+                            ].map(s => (
+                                <div key={s.n} className="flex gap-4 items-start">
+                                    <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-white text-sm font-bold mt-0.5" style={{ background: algo.accent }}>{s.n}</div>
+                                    <div>
+                                        <span className="font-semibold text-gray-800">{s.title}: </span>
+                                        <span className="text-gray-600 text-sm">{s.desc}</span>
                                     </div>
-                                </>
-                            ) : (
-                                <div className="aspect-square flex flex-col items-center justify-center text-center p-8">
-                                    <div className="text-5xl mb-4">🔍</div>
-                                    <p className="font-bold mb-1">Drop your query image</p>
-                                    <p className="text-xs text-white/40">The image you want to find matches for</p>
                                 </div>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+
+                {/* ── Step 2: Search ────────────────────────────────────────────── */}
+                <section>
+                    <div className="flex items-center gap-3 mb-8">
+                        <div className="w-10 h-10 rounded-full text-white flex items-center justify-center font-black text-lg" style={{ background: algo.accent }}>2</div>
+                        <div>
+                            <h2 className="text-2xl font-black">Search for Similar Images</h2>
+                            <p className="text-gray-500 text-sm">Upload a query image — the system finds the closest matches in your index</p>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        {/* Query drop + pipeline */}
+                        <div className="space-y-4">
+                            <div
+                                onClick={() => searchInputRef.current?.click()}
+                                onDragOver={e => { e.preventDefault(); setIsDraggingSearch(true); }}
+                                onDragLeave={() => setIsDraggingSearch(false)}
+                                onDrop={handleSearchFileDrop}
+                                className="cursor-pointer rounded-2xl border-2 border-dashed overflow-hidden transition-all duration-200"
+                                style={{
+                                    borderColor: isDraggingSearch ? algo.accent : queryImage ? algo.accent + '80' : '#d1d5db',
+                                    background: isDraggingSearch ? algo.light : 'white',
+                                }}
+                            >
+                                <input ref={searchInputRef} type="file" accept="image/*" className="hidden" onChange={handleSearchFileDrop} />
+                                {queryImage ? (
+                                    <img src={queryImage.preview} alt={queryImage.name} className="w-full aspect-square object-cover" />
+                                ) : (
+                                    <div className="aspect-square flex flex-col items-center justify-center p-8 text-center">
+                                        <div className="text-4xl mb-3">🔍</div>
+                                        <p className="font-bold text-gray-700 mb-1">Drop query image here</p>
+                                        <p className="text-xs text-gray-400">The image you want to find matches for</p>
+                                    </div>
+                                )}
+                            </div>
+                            {queryImage && <p className="text-xs text-gray-400 text-center">{queryImage.name}</p>}
+
+                            {/* Pipeline */}
+                            <div className="rounded-2xl border border-gray-200 bg-white p-5">
+                                <p className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-3">Search Pipeline</p>
+                                <div className="flex flex-wrap gap-2">
+                                    {searchPipelineStages.map((s, i) => (
+                                        <StageBadge key={s} label={s} active={searchStage === i + 1} done={searchStage > i + 1 || searchStage === 4} accent={algo.accent} />
+                                    ))}
+                                </div>
+                                {searchStage > 0 && (
+                                    <p className="text-xs mt-3" style={{ color: algo.accent }}>
+                                        {searchStage === 1 && `Extracting ${algo.name} features from your query image…`}
+                                        {searchStage === 2 && `Comparing descriptors against ${indexedImages.length} indexed images using ${algo.id === 'SIFT' ? 'L2 distance' : 'Hamming distance'}…`}
+                                        {searchStage === 3 && 'Ranking matches by similarity score…'}
+                                        {searchStage === 4 && '✓ Done!'}
+                                    </p>
+                                )}
+                            </div>
+
+                            <button
+                                onClick={handleSearch}
+                                disabled={!queryImage || isSearching || indexedImages.length === 0}
+                                className="w-full py-3.5 rounded-2xl font-bold text-white text-base transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-90 active:scale-[0.98]"
+                                style={{ background: algo.accent }}
+                            >
+                                {isSearching ? '⏳ Searching…' : '🔍 Run Search'}
+                            </button>
+                            {indexedImages.length === 0 && <p className="text-xs text-center text-gray-400">⬆ Index some images first in Step 1</p>}
+                            {searchError && (
+                                <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">❌ {searchError}</div>
                             )}
                         </div>
 
-                        <button
-                            onClick={handleSearch}
-                            disabled={!queryImage || isSearching || indexedImages.length === 0}
-                            className="w-full mt-4 py-4 rounded-2xl font-bold text-lg transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed hover:scale-[1.02] active:scale-[0.98]"
-                            style={{
-                                background: queryImage && !isSearching ? `linear-gradient(135deg, ${algo.color}, ${algo.color}aa)` : 'rgba(255,255,255,0.1)',
-                                boxShadow: queryImage && !isSearching ? `0 0 30px ${algo.glow}` : 'none',
-                                color: 'white',
-                            }}
-                        >
-                            {isSearching ? '⏳ Searching...' : '🔍 Run Search'}
-                        </button>
-
-                        {indexedImages.length === 0 && (
-                            <p className="text-xs text-center text-white/30 mt-2">Index some images in Step 1 first</p>
-                        )}
-                    </div>
-
-                    {/* Pipeline & results */}
-                    <div>
-                        <h3 className="font-bold mb-4 text-white/70">Search Pipeline</h3>
-                        <div
-                            className="rounded-3xl border p-6 mb-6"
-                            style={{ borderColor: 'rgba(255,255,255,0.08)', background: 'rgba(255,255,255,0.02)' }}
-                        >
-                            <div className="flex items-center justify-between">
-                                {pipelineStages.map((s, i) => (
-                                    <React.Fragment key={i}>
-                                        <PipelineStep
-                                            icon={s.icon}
-                                            label={s.label}
-                                            active={searchStage === i + 1}
-                                            done={searchStage > i + 1 || searchStage === 4}
-                                            color={algo.color}
-                                        />
-                                        {i < pipelineStages.length - 1 && (
-                                            <div
-                                                className="flex-1 h-px mx-2 transition-all duration-500"
-                                                style={{ background: searchStage > i + 1 ? algo.color : 'rgba(255,255,255,0.1)' }}
-                                            />
-                                        )}
-                                    </React.Fragment>
+                        {/* What happens during search */}
+                        <div className="rounded-2xl border border-gray-200 bg-white p-6">
+                            <h3 className="font-bold text-gray-800 mb-4">🔬 What happens during search with {algo.name}?</h3>
+                            <div className="space-y-3">
+                                {[
+                                    { n: 1, title: 'Extract query features', desc: `Same as indexing: ${algo.name} finds keypoints in the query image and computes their descriptors.` },
+                                    { n: 2, title: 'Match descriptors', desc: `Each query descriptor is compared against every descriptor in the index using ${algo.id === 'SIFT' ? 'L2 (Euclidean) distance — lower distance = more similar float vectors.' : 'Hamming distance (XOR) — fewer different bits = more similar binary strings.'}` },
+                                    { n: 3, title: 'Filter good matches', desc: 'Only pairs where distance < 60 are counted as "good matches". This removes noise and false positives.' },
+                                    { n: 4, title: 'Compute score', desc: 'Score = (goodMatches / queryKeypoints) × 250, capped at 100%. Higher = more similar.' },
+                                    { n: 5, title: 'Rank & return', desc: 'Top 6 most similar images are returned, sorted by score descending.' },
+                                ].map(s => (
+                                    <div key={s.n} className="flex gap-4 items-start">
+                                        <div className="w-7 h-7 rounded-full shrink-0 flex items-center justify-center text-white text-sm font-bold mt-0.5" style={{ background: algo.accent }}>{s.n}</div>
+                                        <div>
+                                            <span className="font-semibold text-gray-800">{s.title}: </span>
+                                            <span className="text-gray-600 text-sm">{s.desc}</span>
+                                        </div>
+                                    </div>
                                 ))}
                             </div>
-                            <div className="mt-4 text-center text-sm text-white/40">
-                                {searchStage === 0 && 'Ready to search'}
-                                {searchStage === 1 && <span style={{ color: algo.color }}>Extracting {algo.name} features from query...</span>}
-                                {searchStage === 2 && <span style={{ color: algo.color }}>Matching descriptors against {indexedImages.length} indexed images...</span>}
-                                {searchStage === 3 && <span style={{ color: algo.color }}>Ranking results by similarity score...</span>}
-                                {searchStage === 4 && <span className="text-green-400">Search complete!</span>}
-                            </div>
                         </div>
+                    </div>
 
-                        {/* Results or empty state */}
-                        {searchResults && !searchResults.error && (
-                            searchResults.results?.length > 0 ? (
-                                <div>
-                                    <p className="text-xs text-white/40 mb-3">
-                                        Found <strong className="text-white">{searchResults.results.length}</strong> matches · Query had <strong className="text-white">{searchResults.query_keypoints}</strong> keypoints
-                                    </p>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        {searchResults.results.map((r, i) => (
-                                            <ResultCard key={i} result={r} algo={algo} rank={i} />
-                                        ))}
-                                    </div>
+                    {/* Search results */}
+                    {searchResults && !searchResults.error && (
+                        <div className="mt-8">
+                            <div className="flex items-center gap-4 mb-5">
+                                <h3 className="font-bold text-gray-800">Results</h3>
+                                <span className="text-sm text-gray-400">
+                                    {searchResults.results?.length > 0
+                                        ? `${searchResults.results.length} matches found · Query had ${searchResults.query_keypoints} keypoints`
+                                        : searchResults.message || 'No results'}
+                                </span>
+                            </div>
+                            {searchResults.results?.length > 0 ? (
+                                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+                                    {searchResults.results.map((r, i) => <ResultCard key={i} result={r} algo={algo} rank={i} />)}
                                 </div>
                             ) : (
-                                <div className="text-center py-10 text-white/30">
-                                    <div className="text-4xl mb-2">🤷</div>
-                                    <p>{searchResults.message || 'No similar images found'}</p>
+                                <div className="rounded-2xl border border-gray-200 bg-white p-10 text-center text-gray-400">
+                                    <div className="text-4xl mb-3">🤷</div>
+                                    <p className="font-semibold">{searchResults.message || 'No similar images found'}</p>
+                                    <p className="text-sm mt-1">Try indexing more images or using a different algorithm</p>
                                 </div>
-                            )
-                        )}
-                        {searchResults?.error && (
-                            <div className="p-4 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
-                                ❌ {searchResults.error}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </section>
-
-            {/* ── Section 5: How it Works ──────────────────────────────────────── */}
-            <section className="py-24 px-4 max-w-5xl mx-auto border-t border-white/5">
-                <div className="text-center mb-14">
-                    <h2 className="text-4xl font-black mb-4">How It Works</h2>
-                    <p className="text-white/50 max-w-xl mx-auto">The full pipeline, from pixel to result.</p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                    {[
-                        { step: '01', title: 'Feature Extraction', icon: '🔎', desc: 'The algorithm scans the image for interesting points (corners, edges, blobs). Each point is called a "keypoint".', code: 'orb.detectAndCompute(img, None)' },
-                        { step: '02', title: 'Descriptor Creation', icon: '🧬', desc: 'Around each keypoint, a descriptor vector is computed (e.g., 128 floats for SIFT or 256 bits for ORB). This is the image\'s "fingerprint".', code: 'descriptors.shape → (N, 128)' },
-                        { step: '03', title: 'Matching & Ranking', icon: '🏆', desc: 'For search, we compare the query\'s descriptors against every indexed image using Hamming or Euclidean distance. More matches = higher similarity.', code: 'bf.match(des_query, des_db)' },
-                    ].map((item) => (
-                        <div key={item.step} className="p-6 rounded-3xl border border-white/10 bg-white/3 hover:border-white/20 transition-all duration-300 hover:-translate-y-1">
-                            <div className="text-4xl mb-4">{item.icon}</div>
-                            <div className="text-xs font-bold text-white/30 mb-1">Step {item.step}</div>
-                            <h3 className="text-lg font-black mb-3">{item.title}</h3>
-                            <p className="text-sm text-white/60 leading-relaxed mb-4">{item.desc}</p>
-                            <code className="text-xs text-green-400/80 bg-green-400/5 px-3 py-2 rounded-lg block font-mono">
-                                {item.code}
-                            </code>
+                            )}
                         </div>
-                    ))}
-                </div>
+                    )}
+                </section>
 
-                {/* Algorithm comparison table */}
-                <div className="rounded-3xl border border-white/10 overflow-hidden">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="border-b border-white/10 bg-white/5">
-                                <th className="text-left p-4 font-bold text-white/70">Algorithm</th>
-                                <th className="text-left p-4 font-bold text-white/70">Descriptor Type</th>
-                                <th className="text-left p-4 font-bold text-white/70">Descriptor Size</th>
-                                <th className="text-left p-4 font-bold text-white/70">Matching</th>
-                                <th className="text-left p-4 font-bold text-white/70">Best For</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {[
-                                { a: ALGORITHMS[0], type: 'Binary', size: '256 bits', match: 'Hamming', use: 'Real-time / Mobile' },
-                                { a: ALGORITHMS[1], type: 'Float', size: '128 float32', match: 'L2 / Euclidean', use: 'High accuracy' },
-                                { a: ALGORITHMS[2], type: 'Binary', size: '486 bits', match: 'Hamming', use: 'Balanced quality' },
-                            ].map(({ a, type, size, match, use }) => (
-                                <tr key={a.id} className="border-b border-white/5 hover:bg-white/3 transition-colors">
-                                    <td className="p-4 font-bold" style={{ color: a.color }}>{a.name}</td>
-                                    <td className="p-4 text-white/60">{type}</td>
-                                    <td className="p-4 text-white/60 font-mono text-xs">{size}</td>
-                                    <td className="p-4 text-white/60">{match}</td>
-                                    <td className="p-4 text-white/60">{use}</td>
+                {/* ── Algorithm Comparison Table ───────────────────────────────── */}
+                <section>
+                    <div className="flex items-center gap-3 mb-8">
+                        <div className="w-10 h-10 rounded-full bg-gray-200 text-gray-700 flex items-center justify-center font-black text-lg">📚</div>
+                        <div>
+                            <h2 className="text-2xl font-black">Algorithm Comparison</h2>
+                            <p className="text-gray-500 text-sm">Side-by-side technical comparison of all three algorithms</p>
+                        </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
+                        <table className="w-full text-sm">
+                            <thead>
+                                <tr className="bg-gray-50 border-b border-gray-200">
+                                    <th className="text-left p-4 font-bold text-gray-600">Property</th>
+                                    {ALGORITHMS.map(a => (
+                                        <th key={a.id} className="text-left p-4 font-bold" style={{ color: a.accent }}>{a.name}</th>
+                                    ))}
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {[
+                                    { prop: 'Detector', vals: ['FAST corners', 'DoG extrema', 'AOS extrema'] },
+                                    { prop: 'Descriptor type', vals: ['Binary (256 bits)', 'Float (128 × 4B)', 'Binary (486 bits)'] },
+                                    { prop: 'Memory/keypoint', vals: ['32 bytes', '512 bytes', '61 bytes'] },
+                                    { prop: 'Matching metric', vals: ['Hamming (XOR)', 'L2 Euclidean', 'Hamming'] },
+                                    { prop: 'Scale invariant', vals: ['Partial', 'Full', 'Full'] },
+                                    { prop: 'Rotation invariant', vals: ['Yes', 'Yes', 'Yes'] },
+                                    { prop: 'Typical speed', vals: ['~10ms', '~80ms', '~25ms'] },
+                                ].map((row, i) => (
+                                    <tr key={row.prop} className={`border-b border-gray-100 ${i % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                                        <td className="p-4 font-semibold text-gray-600">{row.prop}</td>
+                                        {row.vals.map((v, j) => (
+                                            <td key={j} className="p-4 text-gray-700 font-mono text-xs">{v}</td>
+                                        ))}
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+
+            <footer className="border-t border-gray-200 bg-white">
+                <div className="max-w-5xl mx-auto px-4 py-8 text-center text-sm text-gray-400">
+                    <p>Built with <strong>FastAPI</strong> · <strong>OpenCV</strong> · <strong>React</strong> · <strong>Cloudinary</strong></p>
+                    <p className="mt-1">An open-source educational demo of computer vision feature matching</p>
                 </div>
-            </section>
-
-            {/* ── Footer ──────────────────────────────────────────────────────── */}
-            <footer className="py-12 px-4 border-t border-white/5 text-center text-white/30 text-sm">
-                <p>Built with FastAPI · OpenCV · React · Cloudinary</p>
-                <p className="mt-1">An educational demo of computer vision feature matching</p>
             </footer>
-
-            <style>{`
-        @keyframes fadeInDot {
-          0% { opacity: 0; transform: scale(0); }
-          60% { opacity: 1; transform: scale(1.3); }
-          100% { opacity: 0.8; transform: scale(1); }
-        }
-      `}</style>
         </div>
     );
 }
