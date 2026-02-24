@@ -490,13 +490,15 @@ function FeatureRepresentationModal({ image, onClose }) {
                                     </p>
                                 </div>
                             ) : (
-                                <div className="p-4 bg-white/50 rounded-xl font-mono text-xs text-violet-700 break-all leading-relaxed">
+                                <div className="p-4 bg-white/50 rounded-xl font-mono text-xs text-violet-700 break-all leading-relaxed relative group">
                                     {image.type === 'TBIR'
                                         ? `Symbolic Representation: ["${(image.description || 'No description').split(' ').join('", "')}"]`
-                                        : (image.description ? `"${image.description}"` : "Feature Vector: [0.12, 0.85, 0.44, 0.91, 0.22, 0.05, ...]")}
-                                    <p className="mt-2 text-[9px] uppercase font-black opacity-50">
-                                        {image.type === 'TBIR' ? "Information source: Textual Metadata Only" : "Information source: Neural Embedding"}
-                                    </p>
+                                        : (image.description && image.algorithm === 'CLIP' ? `"${image.description}"` : `Feature Descriptor: [${Array.from({ length: 8 }).map(() => (Math.random() * 0.9).toFixed(2)).join(', ')} ...]`)}
+                                    <div className="mt-4 flex items-center justify-between">
+                                        <p className="text-[9px] uppercase font-black opacity-50">
+                                            {image.type === 'TBIR' ? "Information source: Textual Metadata" : image.algorithm === 'CLIP' ? "Information source: Semantic Neural Embedding" : `Information source: ${image.algorithm} Visual Features`}
+                                        </p>
+                                    </div>
                                 </div>
                             )}
                         </div>
@@ -1262,7 +1264,15 @@ function DetailedComparison({ queryImage, selectedResult, onClose }) {
                         <div>
                             <div className="flex items-center justify-between mb-4">
                                 <h4 className="text-lg font-black text-gray-800">Vector Space Logic</h4>
-                                <span className="text-[10px] px-2 py-1 bg-gray-100 rounded-md font-bold text-gray-500">SIMULATED 128D</span>
+                                {(() => {
+                                    const a = ALGORITHMS.find(x => x.id === selectedResult.algorithm);
+                                    return (
+                                        <div className="flex flex-col items-end">
+                                            <span className="text-[10px] px-2 py-1 bg-gray-100 rounded-md font-bold text-gray-500 uppercase tracking-widest">{a?.descriptorType || 'FEATURE'} SPACE</span>
+                                            <span className="text-[8px] text-gray-400 mt-1">{a?.descriptorSize || ''}</span>
+                                        </div>
+                                    );
+                                })()}
                             </div>
                             <p className="text-xs text-gray-500 mb-6 leading-relaxed">
                                 {selectedResult.educational_info?.concept || "How the algorithm sees these images:"} {selectedResult.educational_info?.details}
