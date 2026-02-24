@@ -1099,7 +1099,7 @@ const HomePage = () => {
 
                 {/* ── Index Gallery ────────────────────────────────────────── */}
                 <IndexGallery
-                    images={indexedImages.filter(img => img.algorithm === algo.id)}
+                    images={indexedImages}
                     totalImages={indexedImages.length}
                     onClear={handleClearIndex}
                     algo={algo}
