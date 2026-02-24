@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import DetailedComparison from '../search-results-visualization/components/DetailedComparison';
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const INDEXING_TYPES = [
