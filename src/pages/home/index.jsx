@@ -2,9 +2,36 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import DetailedComparison from '../search-results-visualization/components/DetailedComparison';
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
+const INDEXING_TYPES = [
+    { id: 'TBIR', name: 'Text-Based', icon: '📝', desc: 'Metadata & Keywords' },
+    { id: 'CBIR', name: 'Content-Based', icon: '🎨', desc: 'Pixels, Shapes & Colors' },
+    { id: 'DL', name: 'Deep Learning', icon: '🧠', desc: 'Neural Embeddings' },
+];
+
 const ALGORITHMS = [
     {
+        id: 'TBIR_BASIC',
+        type: 'TBIR',
+        name: 'Inverted Index',
+        full: 'Classic Keyword Retrieval',
+        accent: '#475569',
+        light: '#f8fafc',
+        border: '#e2e8f0',
+        text: '#334155',
+        badge: 'Keyword Search',
+        description: 'Uses text tags and filenames. No visual analysis, just efficient text matching.',
+        speed: 5,
+        accuracy: 2,
+        descriptorSize: 'Variable',
+        descriptorType: 'Tokens',
+        matchMetric: 'Jaccard / TF-IDF',
+        detectorDetail: 'Tokenizer — breaks description into individual words',
+        descriptorDetail: 'Inverted Index — maps words to image IDs',
+        matchDetail: 'Word intersection — finds images sharing the most words with your query.',
+    },
+    {
         id: 'ORB',
+        type: 'CBIR',
         name: 'ORB',
         full: 'Oriented FAST & Rotated BRIEF',
         accent: '#7c3aed',
@@ -24,6 +51,7 @@ const ALGORITHMS = [
     },
     {
         id: 'SIFT',
+        type: 'CBIR',
         name: 'SIFT',
         full: 'Scale-Invariant Feature Transform',
         accent: '#0891b2',
@@ -43,6 +71,7 @@ const ALGORITHMS = [
     },
     {
         id: 'AKAZE',
+        type: 'CBIR',
         name: 'AKAZE',
         full: 'Accelerated-KAZE',
         accent: '#c2410c',
@@ -62,6 +91,7 @@ const ALGORITHMS = [
     },
     {
         id: 'HOG',
+        type: 'CBIR',
         name: 'HOG',
         full: 'Histogram of Oriented Gradients',
         accent: '#059669',
@@ -81,6 +111,7 @@ const ALGORITHMS = [
     },
     {
         id: 'CNN',
+        type: 'DL',
         name: 'CNN',
         full: 'Convolutional Neural Network',
         accent: '#2563eb',
@@ -99,64 +130,8 @@ const ALGORITHMS = [
         matchDetail: 'Vector distance — similarity is measured in a high-dimensional "latent space" where similar objects group together.',
     },
     {
-        id: 'SVM',
-        name: 'SVM',
-        full: 'Support Vector Machine',
-        accent: '#db2777',
-        light: '#fdf2f8',
-        border: '#fbcfe8',
-        text: '#be185d',
-        badge: 'ML Classifier',
-        description: 'Finds the optimal boundary between different types of images. Great for binary classification.',
-        speed: 4,
-        accuracy: 4,
-        descriptorSize: 'Variable',
-        descriptorType: 'Decision Boundary',
-        matchMetric: 'Distance to Hyperplane',
-        detectorDetail: 'Support Vectors — the algorithm identifies the most "difficult" data points that define the separation boundary',
-        descriptorDetail: 'Kernel Trick — maps data to higher dimensions to find a linear separation where none existed before',
-        matchDetail: 'Classification — checks which side of the learned boundary the new image falls on.',
-    },
-    {
-        id: 'PCA',
-        name: 'PCA',
-        full: 'Principal Component Analysis',
-        accent: '#475569',
-        light: '#f8fafc',
-        border: '#e2e8f0',
-        text: '#334155',
-        badge: 'Dimension Reduction',
-        description: 'Simplifies complex data. Retains only the most important visual variations.',
-        speed: 5,
-        accuracy: 3,
-        descriptorSize: '16-64 components',
-        descriptorType: 'Reduced Vector',
-        matchMetric: 'Mahalanobis distance',
-        detectorDetail: 'Eigenvectors — finds the directions of maximum variance (the "main look" of the dataset)',
-        descriptorDetail: 'Projection — squashes a massive 128-float vector down to just 16 "principal components" without losing core info',
-        matchDetail: 'Low-rank matching — comparing images in a much smaller, compressed space for maximum speed.',
-    },
-    {
-        id: 'MEANSHIFT',
-        name: 'Mean Shift',
-        full: 'Non-Parametric Clustering',
-        accent: '#d97706',
-        light: '#fffbeb',
-        border: '#fef3c7',
-        text: '#b45309',
-        badge: 'Segmentation',
-        description: 'Groups pixels together to find "blobs" of color or texture. No fixed number of clusters needed.',
-        speed: 2,
-        accuracy: 4,
-        descriptorSize: 'N clusters',
-        descriptorType: 'Modal Centroids',
-        matchMetric: 'Bhattacharyya distance',
-        detectorDetail: 'Density Gradient — iteratively shifts towards regions of higher data density (the "modes")',
-        descriptorDetail: 'Segmentation — clusters pixels into regions of uniform color/texture, creating a simplified map',
-        matchDetail: 'Histogram matching — comparing the distribution of the segmented regions.',
-    },
-    {
         id: 'CLIP',
+        type: 'DL',
         name: 'CLIP',
         full: 'Contrastive Language-Image Pre-training',
         accent: '#8b5cf6',
@@ -244,7 +219,7 @@ function IndexingOverlay({ algo, stepIndex }) {
             {/* Step 2: Feature Extraction */}
             {stepIndex >= 2 && (
                 <div className="absolute inset-0">
-                    {['ORB', 'SIFT', 'AKAZE'].includes(algo.id) && (
+                    {algo.type === 'CBIR' && ['ORB', 'SIFT', 'AKAZE'].includes(algo.id) && (
                         <div className="relative w-full h-full">
                             {[...Array(8)].map((_, i) => (
                                 <div key={i} className="absolute w-1.5 h-1.5 rounded-full animate-ping"
@@ -267,34 +242,40 @@ function IndexingOverlay({ algo, stepIndex }) {
                             ))}
                         </div>
                     )}
-                    {algo.id === 'CNN' && (
-                        <div className="grid grid-cols-5 grid-rows-5 h-full w-full opacity-30 p-1">
-                            {[...Array(25)].map((_, i) => (
-                                <div key={i} className="rounded-sm" style={{ background: `rgba(37, 99, 235, ${Math.random()})` }} />
-                            ))}
+                    {algo.type === 'DL' && (
+                        <div className="absolute inset-0 bg-blue-600/10 flex items-center justify-center overflow-hidden">
+                            <div className="w-full h-full opacity-30 pointer-events-none">
+                                <svg viewBox="0 0 100 100" className="w-full h-full">
+                                    {[...Array(5)].map((_, i) => (
+                                        <line key={i} x1="0" y1={20 * i} x2="100" y2={100 - 20 * i} stroke="white" strokeWidth="0.5" className="animate-pulse" />
+                                    ))}
+                                </svg>
+                            </div>
                         </div>
                     )}
-                    {(algo.id === 'MEANSHIFT' || algo.id === 'K-MEANS') && (
+                    {algo.type === 'TBIR' && (
                         <div className="absolute inset-0 flex items-center justify-center">
-                            <div className="w-full h-full bg-orange-400/10 backdrop-blur-[0.5px] grid grid-cols-2 grid-rows-2 gap-0.5 p-1">
-                                {[...Array(4)].map((_, i) => (
-                                    <div key={i} className="bg-orange-400/40 rounded-sm" />
-                                ))}
+                            <div className="bg-white/90 p-2 rounded text-[8px] font-mono text-gray-500 animate-pulse">
+                                TOKENIZING... description.split(' ')
                             </div>
                         </div>
                     )}
                 </div>
             )}
-
-            {/* Step 3: Descriptor Generation (Pulse) */}
-            {stepIndex === 3 && (
-                <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="w-full h-full animate-pulse border-4" style={{ borderColor: algo.accent + '40' }} />
-                </div>
-            )}
         </div>
     );
 }
+
+const ColorBar = ({ stats }) => {
+    if (!stats) return null;
+    return (
+        <div className="flex h-1.5 rounded-full overflow-hidden mt-2 bg-gray-100 border border-gray-100">
+            <div style={{ width: `${stats.r}%`, background: '#ef4444' }} />
+            <div style={{ width: `${stats.g}%`, background: '#22c55e' }} />
+            <div style={{ width: `${stats.b}%`, background: '#3b82f6' }} />
+        </div>
+    );
+};
 
 // ─── INDEXED IMAGE WITH LIVE LOG ─────────────────────────────────────────────
 function IndexedCard({ image, algo }) {
@@ -377,40 +358,33 @@ function SearchLivePanel({ queryImage, algo, steps }) {
 
 // ─── RESULT CARD ─────────────────────────────────────────────────────────────
 function ResultCard({ result, rank, onSelect }) {
-    const score = result.similarityScore;
-    const color = score > 65 ? '#16a34a' : score > 35 ? '#ca8a04' : '#dc2626';
     return (
-        <div
-            onClick={() => onSelect(result)}
-            className="rounded-2xl border bg-white overflow-hidden shadow-sm hover:shadow-md transition-all hover:-translate-y-0.5 cursor-pointer group"
-        >
-            <div className="relative">
-                {result.url
-                    ? <img src={result.url} alt={result.filename} className="w-full aspect-square object-cover group-hover:scale-105 transition-transform duration-500" />
-                    : <div className="w-full aspect-square bg-gray-100 flex items-center justify-center text-4xl">🖼️</div>
-                }
-                <div className="absolute top-2 right-2 px-2.5 py-1 rounded-full text-xs font-bold text-white shadow" style={{ background: color }}>{score.toFixed(0)}%</div>
-                <div className="absolute top-2 left-2 w-6 h-6 rounded-full bg-white/90 flex items-center justify-center text-xs font-bold text-gray-600 shadow">#{rank + 1}</div>
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/5 transition-colors flex items-center justify-center">
-                    <div className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 px-3 py-1.5 rounded-full text-[10px] font-bold text-gray-700 shadow-xl border border-gray-100">
-                        🔍 View Deep-dive
-                    </div>
+        <div className="group relative bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 cursor-pointer"
+            onClick={() => onSelect(result)}>
+            <div className="aspect-square relative overflow-hidden">
+                <img src={result.url} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded-full">
+                    RANK #{rank + 1}
+                </div>
+                <div className="absolute top-2 right-2 flex items-center gap-1 bg-white/90 backdrop-blur-md px-2 py-1 rounded-full border shadow-sm">
+                    <span className="text-[10px] font-black">{result.similarityScore}%</span>
                 </div>
             </div>
-            <div className="h-1.5 bg-gray-100">
-                <div className="h-full rounded-r-full transition-all duration-700" style={{ width: score + '%', background: color }} />
-            </div>
-            <div className="p-3">
-                <p className="text-xs text-gray-500 truncate font-semibold">{result.filename}</p>
-                <div className="flex items-center justify-between mt-1">
-                    <span className="text-[10px] text-gray-400 capitalize">{result.algorithm}</span>
-                    <span className="text-[10px] text-gray-400">{result.matchesCount || 0} pts</span>
-                </div>
-                {result.description && (
-                    <div className="mt-2 text-[9px] font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded truncate">
-                        🏷️ {result.description}
+            <div className="p-4">
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">{result.algorithm}</p>
+                <p className="text-xs font-bold text-gray-800 truncate mb-2">{result.filename}</p>
+
+                {result.color_stats && (
+                    <div className="mb-3">
+                        <p className="text-[9px] text-gray-400 mb-1">Visual Distribution</p>
+                        <ColorBar stats={result.color_stats} />
                     </div>
                 )}
+
+                <div className="flex items-center justify-between pt-2 border-t border-gray-50">
+                    <span className="text-[10px] text-gray-400">{result.matchesCount > 0 ? `${result.matchesCount} matches` : 'Vector Similarity'}</span>
+                    <button className="text-[10px] font-bold text-blue-600 hover:underline">View Analysis →</button>
+                </div>
             </div>
         </div>
     );
@@ -444,6 +418,7 @@ function IndexGallery({ images, onClear, algo }) {
                                 <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md font-bold">{img.algorithm || 'INDEXED'}</span>
                                 {img.keypoints > 0 && <span className="text-[9px] text-gray-400 font-mono">{img.keypoints} pts</span>}
                             </div>
+                            {img.color_stats && <ColorBar stats={img.color_stats} />}
                             {img.description && (
                                 <p className="mt-1 text-[9px] text-gray-500 italic truncate border-t border-gray-50 pt-1">
                                     "{img.description}"
@@ -459,7 +434,8 @@ function IndexGallery({ images, onClear, algo }) {
 
 // ─── MAIN PAGE ────────────────────────────────────────────────────────────────
 const HomePage = () => {
-    const [algo, setAlgo] = useState(ALGORITHMS[0]);
+    const [activeType, setActiveType] = useState(INDEXING_TYPES[1]); // Default to CBIR
+    const [algo, setAlgo] = useState(ALGORITHMS.find(a => a.type === 'CBIR'));
     const [indexedImages, setIndexedImages] = useState([]);
     const [queryImage, setQueryImage] = useState(null);
     const [searchResults, setSearchResults] = useState(null);
@@ -474,9 +450,10 @@ const HomePage = () => {
     const indexInputRef = useRef(null);
     const searchInputRef = useRef(null);
 
-    // Fetch index on mount
+    // Fetch index on mount and when activeType changes
     useEffect(() => {
-        fetch(`${API_BASE}/api/index/list`)
+        setIndexedImages([]); // Clear previous type images
+        fetch(`${API_BASE}/api/index/list?type=${activeType.id}`)
             .then(r => r.json())
             .then(data => {
                 setIndexedImages(data.map(img => ({
@@ -487,15 +464,25 @@ const HomePage = () => {
                 })));
             })
             .catch(err => console.error("Failed to fetch index", err));
-    }, []);
+
+        // Update current algorithm if it doesn't match the new type
+        if (algo.type !== activeType.id) {
+            setAlgo(ALGORITHMS.find(a => a.type === activeType.id));
+        }
+    }, [activeType]);
 
     const handleClearIndex = async () => {
         if (!confirm("Are you sure you want to delete all indexed images?")) return;
         try {
-            await fetch(`${API_BASE}/api/index`, { method: 'DELETE' });
+            const res = await fetch(`${API_BASE}/api/index`, { method: 'DELETE' });
+            if (!res.ok) throw new Error(`Status: ${res.status}`);
+
             setIndexedImages([]);
+            setSearchResults(null);
+            alert("Database cleared successfully!");
         } catch (err) {
             console.error("Failed to clear index", err);
+            alert("Failed to clear index. Please check your connection.");
         }
     };
 
@@ -643,17 +630,34 @@ const HomePage = () => {
     return (
         <div className="min-h-screen bg-gray-50 text-gray-900" style={{ fontFamily: "'Inter', sans-serif" }}>
 
-            {/* ── Hero ─────────────────────────────────────────────────────── */}
+            {/* ── Type Selector (The 3 Pillars) ─────────────────────────────── */}
+            <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+                <div className="max-w-4xl mx-auto px-4 flex justify-around">
+                    {INDEXING_TYPES.map(t => (
+                        <button
+                            key={t.id}
+                            onClick={() => setActiveType(t)}
+                            className={`flex-1 py-4 flex flex-col items-center gap-1 transition-all border-b-2 ${activeType.id === t.id ? 'border-violet-600 opacity-100' : 'border-transparent opacity-40 hover:opacity-60'}`}
+                        >
+                            <span className="text-xl">{t.icon}</span>
+                            <span className="text-xs font-bold uppercase tracking-widest">{t.name}</span>
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             <header className="bg-white border-b border-gray-200 shadow-sm">
-                <div className="max-w-4xl mx-auto px-4 py-12 text-center">
+                <div className="max-w-4xl mx-auto px-4 py-8 text-center">
                     <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-violet-50 border border-violet-200 text-violet-700 text-xs font-semibold mb-6">
-                        🎓 Educational Demo · Computer Vision
+                        🎓 Educational Demo · {activeType.name} Mode
                     </div>
                     <h1 className="text-4xl md:text-5xl font-black tracking-tight text-gray-900 mb-4">
-                        How does <span style={{ color: algo.accent }}>Image Search</span> Work?
+                        <span style={{ color: activeType.id === 'CBIR' ? '#0891b2' : activeType.id === 'DL' ? '#2563eb' : '#475569' }}>
+                            {activeType.name}
+                        </span> Indexing
                     </h1>
                     <p className="text-base text-gray-500 max-w-xl mx-auto leading-relaxed">
-                        Upload images, pick an algorithm, and watch each processing step unfold live — with real numbers and explanations.
+                        {activeType.desc}. {activeType.id === 'CBIR' ? 'Algorithms that analyze colors, shapes, and patterns.' : activeType.id === 'DL' ? 'Smart systems that learn semantic concepts.' : 'Classical keyword-based archiving.'}
                     </p>
                 </div>
             </header>
@@ -663,8 +667,8 @@ const HomePage = () => {
                 {/* ── 0: Algorithm ─────────────────────────────────────────── */}
                 <section>
                     <SectionHeader number="0" title="Choose an Algorithm" sub="Determines how keypoints are detected and described" />
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                        {ALGORITHMS.map(a => {
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        {ALGORITHMS.filter(a => a.type === activeType.id).map(a => {
                             const sel = algo.id === a.id;
                             return (
                                 <button key={a.id} onClick={() => setAlgo(a)}
@@ -746,7 +750,7 @@ const HomePage = () => {
                                         {indexedImages.filter(i => !i.pending).length} done
                                     </span>
                                 </p>
-                                <button onClick={async () => { await fetch(`${API_BASE}/api/index`, { method: 'DELETE' }).catch(() => { }); setIndexedImages([]); setSearchResults(null); }}
+                                <button onClick={handleClearIndex}
                                     className="text-xs text-red-500 border border-red-200 hover:border-red-400 px-3 py-1 rounded-full transition-colors">
                                     Clear index
                                 </button>
@@ -917,6 +921,134 @@ const HomePage = () => {
                     onClose={() => setSelectedDetailResult(null)}
                 />
             )}
+        </div>
+    );
+}
+
+// ─── DETAILED COMPARISON (Vector Visualization) ───────────────────────────────
+function DetailedComparison({ queryImage, selectedResult, onClose }) {
+    if (!selectedResult) return null;
+
+    const queryColors = queryImage?.color_stats || { r: 33, g: 33, b: 33 };
+    const targetColors = selectedResult.color_stats || { r: 33, g: 33, b: 33 };
+
+    return (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-gray-900/90 backdrop-blur-lg animate-in fade-in duration-300">
+            <div className="bg-white w-full max-w-5xl rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row h-full max-h-[90vh]">
+                {/* Left: Visual Comparison */}
+                <div className="w-full md:w-1/2 p-8 border-r border-gray-100 flex flex-col items-center justify-center bg-gray-50/50">
+                    <button onClick={onClose} className="absolute top-6 left-6 p-2 bg-white rounded-full shadow-md hover:scale-110 transition-transform md:hidden">✕</button>
+
+                    <div className="w-full grid grid-cols-2 gap-4 mb-8">
+                        <div className="text-center">
+                            <p className="text-[10px] uppercase font-bold text-gray-400 mb-2 tracking-widest">Query Image</p>
+                            <div className="aspect-square rounded-2xl overflow-hidden border-4 border-white shadow-lg">
+                                <img src={queryImage?.preview || queryImage?.url} className="w-full h-full object-cover" />
+                            </div>
+                        </div>
+                        <div className="text-center">
+                            <p className="text-[10px] uppercase font-bold text-gray-400 mb-2 tracking-widest">Matched Result</p>
+                            <div className="aspect-square rounded-2xl overflow-hidden border-4 border-violet-600 shadow-lg">
+                                <img src={selectedResult.url} className="w-full h-full object-cover" />
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="w-full space-y-6">
+                        <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+                            <h4 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
+                                📊 Visual Distribution Comparison
+                            </h4>
+                            <div className="space-y-4">
+                                <div>
+                                    <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
+                                        <span>QUERY FEATURE</span>
+                                        <span>R:{queryColors.r}% G:{queryColors.g}% B:{queryColors.b}%</span>
+                                    </div>
+                                    <ColorBar stats={queryColors} />
+                                </div>
+                                <div className="flex justify-center py-1 opacity-20">
+                                    <span className="text-xl">↕</span>
+                                </div>
+                                <div>
+                                    <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
+                                        <span>TARGET FEATURE</span>
+                                        <span>R:{targetColors.r}% G:{targetColors.g}% B:{targetColors.b}%</span>
+                                    </div>
+                                    <ColorBar stats={targetColors} />
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Right: Technical Breakdown */}
+                <div className="w-full md:w-1/2 p-8 overflow-y-auto">
+                    <div className="flex justify-between items-start mb-8">
+                        <div>
+                            <h2 className="text-3xl font-black text-gray-900 mb-1">Match Analysis</h2>
+                            <p className="text-sm text-gray-500">Method: <span className="font-bold text-violet-600">{selectedResult.algorithm}</span></p>
+                        </div>
+                        <button onClick={onClose} className="p-2 bg-gray-100 text-gray-400 rounded-full hover:bg-gray-200 transition-colors">✕</button>
+                    </div>
+
+                    <div className="space-y-8">
+                        {/* Score Gauge */}
+                        <div className="relative h-48 bg-gradient-to-br from-violet-600 to-indigo-700 rounded-2xl p-8 text-white flex flex-col items-center justify-center overflow-hidden">
+                            <div className="absolute inset-0 opacity-10 pointer-events-none">
+                                <div className="grid grid-cols-10 gap-2 h-full w-full">
+                                    {Array.from({ length: 100 }).map((_, i) => (
+                                        <div key={i} className="bg-white rounded-sm h-1"></div>
+                                    ))}
+                                </div>
+                            </div>
+                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] mb-2 opacity-80">Mathematical Similarity</span>
+                            <span className="text-7xl font-black">{selectedResult.similarityScore}%</span>
+                            <div className="mt-4 px-4 py-1.5 bg-white/20 backdrop-blur-md rounded-full text-xs font-bold">
+                                {selectedResult.similarityScore > 90 ? '🔥 Exact Context Patch' : selectedResult.similarityScore > 70 ? '✨ Highly Similar' : '👀 Probable Match'}
+                            </div>
+                        </div>
+
+                        {/* Vector Visualization (The "Nuts & Bolts") */}
+                        <div>
+                            <div className="flex items-center justify-between mb-4">
+                                <h4 className="text-lg font-black text-gray-800">Vector Space Logic</h4>
+                                <span className="text-[10px] px-2 py-1 bg-gray-100 rounded-md font-bold text-gray-500">SIMULATED 128D</span>
+                            </div>
+                            <p className="text-xs text-gray-500 mb-6 leading-relaxed">
+                                {selectedResult.educational_info?.concept || "How the algorithm sees these images:"} {selectedResult.educational_info?.details}
+                            </p>
+
+                            <div className="flex items-end gap-0.5 h-20 bg-gray-50 rounded-xl p-4 border border-gray-100 shadow-inner overflow-hidden">
+                                {Array.from({ length: 64 }).map((_, i) => {
+                                    // Simulated vector values that look "related"
+                                    const val = (Math.sin(i * 0.2) + 1) * 20 + (Math.random() * 10);
+                                    const mod = Math.abs(Math.sin(i * 0.2 + selectedResult.similarityScore / 100) + 1) * 20;
+                                    return (
+                                        <div key={i} className="flex-1 flex flex-col gap-0.5 h-full justify-end">
+                                            <div className="bg-violet-600/30 rounded-t-sm" style={{ height: `${val}%` }}></div>
+                                            <div className="bg-violet-600 rounded-t-sm" style={{ height: `${mod}%` }}></div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                            <div className="flex justify-between mt-2">
+                                <div className="flex items-center gap-2"><div className="w-2 h-2 bg-violet-600/30 rounded-full"></div><span className="text-[9px] font-bold text-gray-400">QUERY VECTOR</span></div>
+                                <div className="flex items-center gap-2"><div className="w-2 h-2 bg-violet-600 rounded-full"></div><span className="text-[9px] font-bold text-gray-400">TARGET VECTOR</span></div>
+                            </div>
+                        </div>
+
+                        <div className="bg-blue-50 border border-blue-100 p-5 rounded-2xl">
+                            <h5 className="text-xs font-bold text-blue-800 mb-2 uppercase tracking-wide">Academic Insight</h5>
+                            <p className="text-xs text-blue-700 leading-relaxed">
+                                {selectedResult.algorithm === 'CLIP'
+                                    ? "CLIP projects both text and images into a shared semantic space. Similarity isn't calculated on pixels, but on the alignment of vectors in this 'Meaning Space'."
+                                    : "CBIR algorithms detect patterns (gradients, textures). The distance between the query vector and target vector determines the rank. Smaller Euclidean distance = Higher similarity score."}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
