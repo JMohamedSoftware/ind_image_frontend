@@ -841,10 +841,12 @@ const HomePage = () => {
             } else {
                 // Classic Image Search Path
                 const contentSource = searchFile || queryImage?.file;
-                if (!contentSource) throw new Error("No image data available for search");
+                // Always use the real File object — never (re)fetch the blob preview URL,
+                // which can be revoked or cross-origin and causes "Failed to fetch".
+                const blob = contentSource instanceof File || contentSource instanceof Blob
+                    ? contentSource
+                    : (() => { throw new Error("No image file available. Please drop the image again."); })();
 
-                // Use the file directly if we have it, otherwise fallback to fetching the preview (though file is preferred)
-                const blob = contentSource instanceof Blob ? contentSource : await fetch(queryImage.preview).then(r => r.blob());
 
                 upd(0, 'done', `Query loaded (${(blob.size / 1024).toFixed(1)} KB)`);
                 upd(1, 'running');
