@@ -526,18 +526,17 @@ function FeatureRepresentationModal({ image, onClose }) {
 }
 
 // ─── INDEX GALLERY ──────────────────────────────────────────────────────────
-function IndexGallery({ images, onClear, algo, onSelectImage }) {
-    if (images.length === 0) return null;
+function IndexGallery({ images, totalImages, onClear, algo, onSelectImage }) {
+    if (images.length === 0 && totalImages === 0) return null;
 
     return (
-        <div className="mt-12 p-8 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
+        <section className="mt-12 p-8 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
             <div className="flex justify-between items-center mb-8">
                 <div>
                     <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
-                        🖼️ Indexed Image Library
-                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 text-[10px] font-black uppercase tracking-widest border border-green-200">
-                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
-                            Persistent Storage Active
+                        🖼️ {algo.name} Pool
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-black uppercase tracking-widest border border-blue-200">
+                            {images.length} Images Indexed
                         </span>
                     </h3>
                     <p className="text-sm text-gray-500">The "knowledge base" your {algo.name} algorithm is searching through.</p>
@@ -549,6 +548,7 @@ function IndexGallery({ images, onClear, algo, onSelectImage }) {
                     🗑️ Clear Database
                 </button>
             </div>
+
             {algo.type === 'TBIR' && (
                 <div className="mb-6 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
                     <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-xl">📝</div>
@@ -558,34 +558,43 @@ function IndexGallery({ images, onClear, algo, onSelectImage }) {
                     </div>
                 </div>
             )}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                {images.map((img, i) => (
-                    <div
-                        key={i}
-                        onClick={() => onSelectImage(img)}
-                        className="group relative bg-white p-2 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer"
-                    >
-                        <img src={img.url || img.preview} alt={img.name} className="w-full aspect-square object-cover rounded-xl border mb-2" />
-                        <div className="px-1">
-                            <p className="text-[10px] font-bold text-gray-400 truncate uppercase tracking-tighter">{img.name}</p>
-                            <div className="flex items-center justify-between mt-1">
-                                <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md font-bold">{img.algorithm || 'INDEXED'}</span>
-                                {img.keypoints > 0 && <span className="text-[9px] text-gray-400 font-mono">{img.keypoints} pts</span>}
-                            </div>
-                            {img.color_stats && <ColorBar stats={img.color_stats} />}
-                            {img.description && (
-                                <p className="mt-1 text-[9px] text-gray-800 font-bold italic truncate border-t border-gray-50 pt-1">
-                                    "{img.description}"
-                                </p>
-                            )}
-                            <div className="mt-2 text-[8px] text-center font-bold text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">
-                                Detailed Analysis →
+
+            {images.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                    {images.map((img, i) => (
+                        <div
+                            key={i}
+                            onClick={() => onSelectImage(img)}
+                            className="group relative bg-white p-2 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer"
+                        >
+                            <img src={img.url || img.preview} alt={img.name} className="w-full aspect-square object-cover rounded-xl border mb-2" />
+                            <div className="px-1">
+                                <p className="text-[10px] font-bold text-gray-400 truncate uppercase tracking-tighter">{img.name}</p>
+                                <div className="flex items-center justify-between mt-1">
+                                    <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md font-bold">{img.algorithm || 'INDEXED'}</span>
+                                    {img.keypoints > 0 && <span className="text-[9px] text-gray-400 font-mono">{img.keypoints} pts</span>}
+                                </div>
+                                {img.color_stats && <ColorBar stats={img.color_stats} />}
+                                {img.description && (
+                                    <p className="mt-1 text-[9px] text-gray-800 font-bold italic truncate border-t border-gray-50 pt-1">
+                                        "{img.description}"
+                                    </p>
+                                )}
+                                <div className="mt-2 text-[8px] text-center font-bold text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">
+                                    Detailed Analysis →
+                                </div>
                             </div>
                         </div>
-                    </div>
-                ))}
-            </div>
-        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="py-20 text-center text-gray-300">
+                    <div className="text-6xl mb-4">📂</div>
+                    <p className="font-bold">This pool is empty</p>
+                    <p className="text-xs">Index some images using {algo.name} in Step 1 to see them here.</p>
+                </div>
+            )}
+        </section>
     );
 }
 
@@ -1089,7 +1098,13 @@ const HomePage = () => {
                 </section>
 
                 {/* ── Index Gallery ────────────────────────────────────────── */}
-                <IndexGallery images={indexedImages} onClear={handleClearIndex} algo={algo} onSelectImage={setSelectedLibraryImage} />
+                <IndexGallery
+                    images={indexedImages.filter(img => img.algorithm === algo.id)}
+                    totalImages={indexedImages.length}
+                    onClear={handleClearIndex}
+                    algo={algo}
+                    onSelectImage={setSelectedLibraryImage}
+                />
 
             </main>
 
