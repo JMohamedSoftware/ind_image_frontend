@@ -318,7 +318,7 @@ function IndexedCard({ image, algo, onComplete }) {
         const t6 = setTimeout(() => {
             update(6, 'done', 'Ready for discovery');
             // Auto removal after a short delay to let the user see the "done" state
-            setTimeout(() => onComplete(image.id), 1000);
+            setTimeout(() => onComplete(image), 1000);
         }, 5500);
 
         return () => [t0, t1, t2, t3, t4, t5, t6].forEach(clearTimeout);
@@ -613,8 +613,10 @@ const HomePage = () => {
     };
 
     // ── Index ─────────────────────────────────────────────────────────────────
-    const handleIndexingComplete = useCallback((id) => {
-        setIndexingPending(prev => prev.filter(img => img.id !== id));
+    const handleIndexingComplete = useCallback((image) => {
+        // Move to library only AFTER the 7-step process is done
+        setIndexedImages(prev => [...prev, image]);
+        setIndexingPending(prev => prev.filter(img => img.id !== image.id));
     }, []);
 
     const uploadAndIndex = useCallback(async (file) => {
@@ -638,19 +640,16 @@ const HomePage = () => {
 
             const data = await fetch(`${API_BASE}/api/index`, { method: 'POST', body: idx }).then(r => r.json());
 
-            // Add to final library
-            setIndexedImages(prev => [...prev, {
-                ...data,
-                name: file.name,
-                preview: url || preview,
-                keypoints: data.keypoints || 0,
-                description: currentDesc,
-                algorithm: algo.id
-            }]);
-
-            // Update the pending card so it can proceed through the final 7 steps
+            // Update the pending card with real backend data so it can proceed through the final 7 steps
             setIndexingPending(prev => prev.map(img => img.id === tempId
-                ? { ...img, keypoints: data.keypoints || 0, pending: false } : img));
+                ? {
+                    ...img,
+                    ...data,
+                    preview: url || preview,
+                    keypoints: data.keypoints || 0,
+                    algorithm: algo.id,
+                    pending: false
+                } : img));
 
         } catch (err) {
             console.error(err);
