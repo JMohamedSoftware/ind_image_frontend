@@ -277,14 +277,16 @@ const ColorBar = ({ stats }) => {
 };
 
 // ─── INDEXED IMAGE WITH LIVE LOG ─────────────────────────────────────────────
-function IndexedCard({ image, algo }) {
+function IndexedCard({ image, algo, onComplete }) {
     const [stepIndex, setStepIndex] = useState(-1);
     const [steps, setSteps] = useState([
-        { text: 'Received image file', detail: null, status: 'pending' },
-        { text: 'Preprocessing', detail: null, status: 'pending' },
-        { text: 'Feature Extraction', detail: null, status: 'pending' },
-        { text: 'Descriptor Generation', detail: null, status: 'pending' },
-        { text: 'Store in index', detail: null, status: 'pending' },
+        { text: '1. ACQUISITION', detail: null, status: 'pending' },
+        { text: '2. PRÉTRAITEMENT', detail: null, status: 'pending' },
+        { text: '3. ANALYSE D’IMAGE', detail: null, status: 'pending' },
+        { text: '4. REPRÉSENTATION', detail: null, status: 'pending' },
+        { text: '5. INDEXATION', detail: null, status: 'pending' },
+        { text: '6. STOCKAGE', detail: null, status: 'pending' },
+        { text: '7. RECHERCHE', detail: null, status: 'pending' },
     ]);
 
     const update = (i, status, detail) => {
@@ -294,45 +296,60 @@ function IndexedCard({ image, algo }) {
 
     useEffect(() => {
         update(0, 'running');
-        const t0 = setTimeout(() => { update(0, 'done', `File: ${image.name}`); update(1, 'running'); }, 300);
-        const t1 = setTimeout(() => { update(1, 'done', 'Image converted to internal format & resized.'); update(2, 'running'); }, 1200);
+        const t0 = setTimeout(() => { update(0, 'done', `Received: ${image.name}`); update(1, 'running'); }, 400);
+        const t1 = setTimeout(() => { update(1, 'done', 'Resized & Normalisé'); update(2, 'running'); }, 1200);
         const t2 = setTimeout(() => {
-            const isKeypoint = ['ORB', 'SIFT', 'AKAZE'].includes(algo.id);
-            update(2, 'done',
-                isKeypoint
-                    ? `${algo.detectorDetail} → Found ${image.keypoints} keypoints`
-                    : `${algo.detectorDetail}`
-            );
+            update(2, 'done', `${algo.name} Analysis`);
             update(3, 'running');
-        }, 2400);
+        }, 2000);
         const t3 = setTimeout(() => {
-            const isKeypoint = ['ORB', 'SIFT', 'AKAZE'].includes(algo.id);
-            update(3, 'done',
-                isKeypoint
-                    ? `${algo.descriptorDetail} → ${image.keypoints} descriptors`
-                    : algo.descriptorDetail
-            );
+            const feat = algo.type === 'TBIR' ? `Tags: ${image.description || 'none'}` : `Vector: ${algo.descriptorSize}`;
+            update(3, 'done', feat);
             update(4, 'running');
-        }, 3600);
+        }, 3000);
         const t4 = setTimeout(() => {
-            update(4, 'done', `Index updated with ${algo.name} features.`);
-            setStepIndex(-1);
-        }, 4500);
-        return () => [t0, t1, t2, t3, t4].forEach(clearTimeout);
-    }, [image.keypoints, algo]);
+            update(4, 'done', 'Mapped to Knowledge Base');
+            update(5, 'running');
+        }, 3800);
+        const t5 = setTimeout(() => {
+            update(5, 'done', 'Saved to index.pkl');
+            update(6, 'running');
+        }, 4600);
+        const t6 = setTimeout(() => {
+            update(6, 'done', 'Ready for discovery');
+            // Auto removal after a short delay to let the user see the "done" state
+            setTimeout(() => onComplete(image.id), 1000);
+        }, 5500);
+
+        return () => [t0, t1, t2, t3, t4, t5, t6].forEach(clearTimeout);
+    }, [image.id, algo]);
 
     return (
-        <div className="rounded-2xl border bg-white shadow-sm overflow-hidden" style={{ borderColor: algo.border }}>
-            <div className="flex gap-4 p-4">
-                <div className="relative w-20 h-20 shrink-0">
-                    <img src={image.preview} alt={image.name} className="w-full h-full rounded-xl object-cover border" style={{ borderColor: algo.border }} />
+        <div className="rounded-2xl border bg-white shadow-xl overflow-hidden animate-in slide-in-from-right duration-500" style={{ borderColor: algo.accent + '30' }}>
+            <div className="flex gap-4 p-5">
+                <div className="relative w-24 h-24 shrink-0 shadow-inner rounded-xl overflow-hidden bg-gray-50 border border-gray-100">
+                    <img src={image.preview} alt={image.name} className="w-full h-full object-cover" />
                     <IndexingOverlay algo={algo} stepIndex={stepIndex} />
+                    <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm p-1 text-center">
+                        <span className="text-[8px] font-black text-white uppercase tracking-tighter">Live Process</span>
+                    </div>
                 </div>
                 <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-gray-500 truncate mb-3">{image.name}</p>
+                    <div className="flex justify-between items-start mb-2">
+                        <p className="text-[10px] font-black text-gray-400 truncate uppercase tracking-widest">{image.name}</p>
+                        <div className="flex gap-1">
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></div>
+                            <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse delay-75"></div>
+                        </div>
+                    </div>
                     <LiveLog steps={steps} />
                 </div>
             </div>
+            {stepIndex === 6 && (
+                <div className="bg-green-500 text-white text-[10px] font-black py-1.5 text-center uppercase tracking-[0.2em] animate-pulse">
+                    Indexing Complete — Adding to Library
+                </div>
+            )}
         </div>
     );
 }
@@ -549,6 +566,7 @@ const HomePage = () => {
     const [textQuery, setTextQuery] = useState('');
     const [indexDescription, setIndexDescription] = useState('');
     const [selectedDetailResult, setSelectedDetailResult] = useState(null);
+    const [indexingPending, setIndexingPending] = useState([]); // Images currently in the 7-step log
     const indexInputRef = useRef(null);
     const searchInputRef = useRef(null);
     const [selectedLibraryImage, setSelectedLibraryImage] = useState(null);
@@ -595,28 +613,50 @@ const HomePage = () => {
     };
 
     // ── Index ─────────────────────────────────────────────────────────────────
+    const handleIndexingComplete = useCallback((id) => {
+        setIndexingPending(prev => prev.filter(img => img.id !== id));
+    }, []);
+
     const uploadAndIndex = useCallback(async (file) => {
         const preview = URL.createObjectURL(file);
         const tempId = Date.now() + Math.random();
-        setIndexedImages(prev => [...prev, { id: tempId, preview, name: file.name, keypoints: 0, pending: true }]);
+        const currentDesc = indexDescription; // Capture current description
+
+        setIndexingPending(prev => [...prev, { id: tempId, preview, name: file.name, description: currentDesc, pending: true }]);
+
         try {
             const f = new FormData();
             f.append('file', file);
             f.append('upload_preset', CLOUDINARY_PRESET);
             const cdn = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/image/upload`, { method: 'POST', body: f }).then(r => r.json());
             const url = cdn.secure_url;
+
             const idx = new FormData();
             if (url) { idx.append('url', url); idx.append('filename', file.name); } else { idx.append('file', file); }
             idx.append('algorithm', algo.id);
-            if (indexDescription) idx.append('description', indexDescription);
+            if (currentDesc) idx.append('description', currentDesc);
+
             const data = await fetch(`${API_BASE}/api/index`, { method: 'POST', body: idx }).then(r => r.json());
-            setIndexedImages(prev => prev.map(img => img.id === tempId
-                ? { ...img, preview: url || preview, keypoints: data.keypoints || 0, pending: false } : img));
+
+            // Add to final library
+            setIndexedImages(prev => [...prev, {
+                ...data,
+                name: file.name,
+                preview: url || preview,
+                keypoints: data.keypoints || 0,
+                description: currentDesc,
+                algorithm: algo.id
+            }]);
+
+            // Update the pending card so it can proceed through the final 7 steps
+            setIndexingPending(prev => prev.map(img => img.id === tempId
+                ? { ...img, keypoints: data.keypoints || 0, pending: false } : img));
+
         } catch (err) {
             console.error(err);
-            setIndexedImages(prev => prev.filter(img => img.id !== tempId));
+            setIndexingPending(prev => prev.filter(img => img.id !== tempId));
         }
-    }, [algo]);
+    }, [algo, indexDescription]);
 
     const handleIndexFiles = useCallback((e) => {
         e.preventDefault();
@@ -635,15 +675,15 @@ const HomePage = () => {
         setSearchResults(null);
         setSearchError(null);
 
-        const isClip = algo.id === 'CLIP';
+        const isTextSearch = algo.type === 'TBIR' || algo.id === 'CLIP';
         const isKeypoint = ['ORB', 'SIFT', 'AKAZE'].includes(algo.id);
         const makeStep = (text, detail = null, status = 'pending') => ({ text, detail, status });
 
-        const initSteps = isClip ? [
+        const initSteps = isTextSearch ? [
             makeStep(`Tokenizing text query: "${textQuery}"`, null, 'running'),
-            makeStep(`Projecting tokens to latent space via Transformer`),
-            makeStep(`Multimodal search in index using Cosine Similarity`),
-            makeStep(`Ranking ${indexedImages.length} images by semantic distance`),
+            makeStep(algo.type === 'TBIR' ? 'Parsing keywords for Inverted Index' : 'Projecting tokens to latent space via Transformer'),
+            makeStep(algo.type === 'TBIR' ? 'Searching entries in Inverted Index' : 'Multimodal search in index using Cosine Similarity'),
+            makeStep(`Ranking ${indexedImages.length} images by relevance score`),
         ] : [
             makeStep(`Load query image`, null, 'running'),
             makeStep(isKeypoint ? `Extract ${algo.name} keypoints from query` : `Preprocess query image for ${algo.name}`),
@@ -658,26 +698,26 @@ const HomePage = () => {
             setSearchLogSteps(prev => prev.map((s, i) => i === idx ? { ...s, status, detail: detail ?? s.detail } : s));
 
         try {
-            if (isClip) {
-                // CLIP Text Search Path
+            if (isTextSearch) {
+                // Text Search Path (TBIR or CLIP)
                 await new Promise(r => setTimeout(r, 600));
-                upd(0, 'done', 'Query parsed into 12 semantic tokens.');
+                upd(0, 'done', algo.type === 'TBIR' ? 'Keywords extracted.' : 'Query parsed into 12 semantic tokens.');
                 upd(1, 'running');
                 await new Promise(r => setTimeout(r, 800));
-                upd(1, 'done', 'Vector coordinates projected to 512D shared space.');
+                upd(1, 'done', algo.type === 'TBIR' ? 'Words mapped to hash keys.' : 'Vector coordinates projected to 512D shared space.');
                 upd(2, 'running');
 
                 const form = new FormData();
                 form.append('query', textQuery);
-                form.append('algorithm', 'CLIP');
+                form.append('algorithm', algo.id);
                 const res = await fetch(`${API_BASE}/api/search/text`, { method: 'POST', body: form });
                 if (!res.ok) throw new Error(`Server error: ${res.status}`);
                 const data = await res.json();
 
-                upd(2, 'done', 'Found semantic matches in image database.');
+                upd(2, 'done', algo.type === 'TBIR' ? 'Match found in Inverted Index.' : 'Found semantic matches in image database.');
                 upd(3, 'running');
                 await new Promise(r => setTimeout(r, 400));
-                upd(3, 'done', `Top match: ${data.results?.[0]?.filename} with ${data.results?.[0]?.similarityScore.toFixed(1)}% confidence.`);
+                upd(3, 'done', `Top match: ${data.results?.[0]?.filename} with ${data.results?.[0]?.similarityScore?.toFixed(1) || 0}% confidence.`);
 
                 setSearchResults(data);
             } else {
@@ -861,22 +901,23 @@ const HomePage = () => {
                         <p className="text-sm text-gray-400">Watch {algo.name} process each image step by step</p>
                     </div>
 
-                    {indexedImages.length > 0 && (
+                    {indexingPending.length > 0 && (
                         <div>
-                            <div className="flex items-center justify-between mb-3">
-                                <p className="font-bold text-gray-700">
-                                    Live indexing log
-                                    <span className="ml-2 text-xs px-2 py-0.5 rounded-full text-white font-bold" style={{ background: algo.accent }}>
-                                        {indexedImages.filter(i => !i.pending).length} done
-                                    </span>
+                            <div className="flex items-center justify-between mb-4">
+                                <p className="font-black text-gray-700 uppercase tracking-widest text-xs flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-green-500 animate-ping"></span>
+                                    7-Step Academic Pipeline
                                 </p>
-                                <button onClick={handleClearIndex}
-                                    className="text-xs text-red-500 border border-red-200 hover:border-red-400 px-3 py-1 rounded-full transition-colors">
-                                    Clear index
-                                </button>
                             </div>
-                            <div className="space-y-4">
-                                {indexedImages.map(img => <IndexedCard key={img.id} image={img} algo={algo} />)}
+                            <div className="space-y-6">
+                                {indexingPending.map(img => (
+                                    <IndexedCard
+                                        key={img.id}
+                                        image={img}
+                                        algo={algo}
+                                        onComplete={handleIndexingComplete}
+                                    />
+                                ))}
                             </div>
                         </div>
                     )}
@@ -894,23 +935,27 @@ const HomePage = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Left: query selection (image or text) */}
                         <div className="space-y-4">
-                            {algo.id === 'CLIP' ? (
-                                <div className="rounded-2xl border-2 p-8 bg-white" style={{ borderColor: textQuery ? algo.accent : '#d1d5db' }}>
-                                    <label className="block text-xs font-bold text-gray-400 mb-2 uppercase tracking-wide">Semantic Search Query</label>
+                            {algo.type === 'TBIR' || algo.id === 'CLIP' ? (
+                                <div className="rounded-2xl border-2 p-8 bg-white shadow-sm" style={{ borderColor: textQuery ? algo.accent : '#d1d5db' }}>
+                                    <label className="block text-xs font-black text-gray-400 mb-4 uppercase tracking-[0.2em]">
+                                        {algo.type === 'TBIR' ? 'Keyword Query (Inverted Index)' : 'Semantic Search Query'}
+                                    </label>
                                     <div className="relative">
                                         <input
                                             type="text"
                                             value={textQuery}
                                             onChange={e => setTextQuery(e.target.value)}
                                             onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                                            placeholder="Example: 'A sunset over the mountains' or 'Red car'..."
-                                            className="w-full text-lg font-semibold bg-transparent outline-none border-b-2 py-2 transition-all placeholder:text-gray-200"
-                                            style={{ borderColor: textQuery ? algo.accent : '#e5e7eb' }}
+                                            placeholder={algo.type === 'TBIR' ? "Saisir une kelma (ex: 'bacloua', 'fraise')..." : "Example: 'A sunset over the mountains'..."}
+                                            className="w-full text-xl font-black bg-transparent outline-none border-b-4 pb-3 transition-all placeholder:text-gray-200"
+                                            style={{ borderColor: textQuery ? algo.accent : '#f3f4f6' }}
                                         />
-                                        <div className="mt-4 p-4 bg-purple-50 rounded-xl border border-purple-100 italic">
-                                            <p className="text-[10px] uppercase font-bold text-purple-400 mb-1">Educational Insight</p>
-                                            <p className="text-xs text-purple-700 leading-relaxed">
-                                                Multimodal AI doesn't look for pixels. It translates your words into a numeric vector that points to concepts stored during indexing.
+                                        <div className="mt-6 p-5 rounded-2xl border italic transition-all" style={{ background: algo.light + '80', borderColor: algo.border }}>
+                                            <p className="text-[10px] uppercase font-black mb-2 tracking-widest" style={{ color: algo.accent }}>Educational Insight</p>
+                                            <p className="text-xs leading-relaxed" style={{ color: algo.accent + 'CC' }}>
+                                                {algo.type === 'TBIR'
+                                                    ? "Text-based search doesn't see images. It finds entries in the Inverted Index matching your keyword exactly."
+                                                    : "Deep Learning search matches meanings, not just words. It computes the distance between your phrase and every image."}
                                             </p>
                                         </div>
                                     </div>
@@ -921,7 +966,7 @@ const HomePage = () => {
                                     onDragOver={e => { e.preventDefault(); setIsDraggingSearch(true); }}
                                     onDragLeave={() => setIsDraggingSearch(false)}
                                     onDrop={handleSearchDrop}
-                                    className="cursor-pointer rounded-2xl border-2 border-dashed overflow-hidden transition-all"
+                                    className="cursor-pointer rounded-2xl border-2 border-dashed overflow-hidden transition-all shadow-sm hover:shadow-lg"
                                     style={{ borderColor: isDraggingSearch ? algo.accent : queryImage ? algo.accent + '80' : '#d1d5db', background: isDraggingSearch ? algo.light : 'white' }}
                                 >
                                     <input ref={searchInputRef} type="file" accept="image/*" className="hidden" onChange={handleSearchDrop} />
