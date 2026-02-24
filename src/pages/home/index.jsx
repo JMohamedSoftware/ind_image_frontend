@@ -501,7 +501,13 @@ function IndexGallery({ images, onClear, algo, onSelectImage }) {
         <div className="mt-12 p-8 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h3 className="text-xl font-bold text-gray-800">🖼️ Indexed Image Library</h3>
+                    <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
+                        🖼️ Indexed Image Library
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 text-[10px] font-black uppercase tracking-widest border border-green-200">
+                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse"></span>
+                            Persistent Storage Active
+                        </span>
+                    </h3>
                     <p className="text-sm text-gray-500">The "knowledge base" your {algo.name} algorithm is searching through.</p>
                 </div>
                 <button
@@ -589,7 +595,10 @@ const HomePage = () => {
                     keypoints: img.keypoint_count
                 })));
             })
-            .catch(err => console.error("Failed to fetch index", err));
+            .catch(err => {
+                console.error("Failed to fetch index", err);
+                setSearchError("Backend unreachable. Persistence might be disabled.");
+            });
 
         // Update current algorithm if it doesn't match the new type
         if (algo.type !== activeType.id) {
