@@ -720,9 +720,9 @@ const HomePage = () => {
     // ── Search ────────────────────────────────────────────────────────────────
     const handleSearch = useCallback(async (file, explicitText) => {
         const searchFile = file || queryImage?.file;
-        const searchText = explicitText !== undefined ? explicitText : textQuery;
+        const currentText = (explicitText !== undefined ? explicitText : textQuery)?.trim();
 
-        if (!searchFile && !searchText) return;
+        if (!searchFile && !currentText) return;
 
         setIsSearching(true);
         setSearchResults(null);
@@ -761,11 +761,15 @@ const HomePage = () => {
                 upd(2, 'running');
 
                 const form = new FormData();
-                form.append('query', searchText);
-                form.append('query_text', searchText); // For multimodal backend
+                form.append('query', currentText || "");
+                form.append('query_text', currentText || ""); // For multimodal backend
                 form.append('algorithm', algo.id);
 
                 const endpoint = (algo.type === 'TBIR' && !searchFile) ? `${API_BASE}/api/search/text` : `${API_BASE}/api/search`;
+
+                // If we also have a file in a text-based search (like CLIP multimodal), append it
+                if (searchFile) form.append('file', searchFile);
+
                 const res = await fetch(endpoint, { method: 'POST', body: form });
                 if (!res.ok) throw new Error(`Server error: ${res.status}`);
                 const data = await res.json();
@@ -773,19 +777,24 @@ const HomePage = () => {
                 upd(2, 'done', algo.type === 'TBIR' ? 'Match found in Inverted Index.' : 'Found semantic matches in image database.');
                 upd(3, 'running');
                 await new Promise(r => setTimeout(r, 400));
-                upd(3, 'done', `Top match: ${data.results?.[0]?.filename} with ${data.results?.[0]?.similarityScore?.toFixed(1) || 0}% confidence.`);
+                upd(3, 'done', `Top match: ${data.results?.[0]?.filename || "N/A"} with ${data.results?.[0]?.similarityScore?.toFixed(1) || 0}% confidence.`);
 
                 setSearchResults(data);
             } else {
                 // Classic Image Search Path
-                const blob = await fetch(queryImage.preview).then(r => r.blob());
+                const contentSource = searchFile || queryImage?.file;
+                if (!contentSource) throw new Error("No image data available for search");
+
+                // Use the file directly if we have it, otherwise fallback to fetching the preview (though file is preferred)
+                const blob = contentSource instanceof Blob ? contentSource : await fetch(queryImage.preview).then(r => r.blob());
+
                 upd(0, 'done', `Query loaded (${(blob.size / 1024).toFixed(1)} KB)`);
                 upd(1, 'running');
 
                 const form = new FormData();
-                form.append('file', blob, queryImage.name);
+                form.append('file', blob, searchFile?.name || queryImage?.name || "query.jpg");
                 form.append('algorithm', algo.id);
-                if (searchText) form.append('query_text', searchText);
+                if (currentText) form.append('query_text', currentText);
 
                 await new Promise(r => setTimeout(r, 600));
                 upd(1, 'done', algo.detectorDetail);
@@ -1053,7 +1062,7 @@ const HomePage = () => {
 
                             <button
                                 onClick={() => handleSearch()}
-                                disabled={isSearching || (!queryImage && !textQuery.trim()) || indexedImages.length === 0}
+                                disabled={isSearching || (algo.type !== 'TBIR' && algo.id !== 'CLIP' && !queryImage) || ((algo.type === 'TBIR' || algo.id === 'CLIP') && !textQuery.trim() && !queryImage) || indexedImages.length === 0}
                                 className="w-full py-4 rounded-2xl font-black text-white text-lg transition-all active:scale-95 disabled:grayscale disabled:opacity-50 shadow-lg hover:shadow-xl"
                                 style={{ background: algo.accent }}
                             >
