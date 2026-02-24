@@ -478,7 +478,21 @@ function FeatureRepresentationModal({ image, onClose }) {
                         {/* Feature Data Display */}
                         <div className="bg-violet-50 border border-violet-100 p-5 rounded-2xl">
                             <h4 className="text-[10px] font-black text-violet-600 uppercase mb-3 tracking-widest">Digital Signature (Step 4)</h4>
-                            {image.color_stats && image.type !== 'TBIR' ? (
+                            {image.type === 'TBIR' ? (
+                                <div className="space-y-3">
+                                    <p className="text-[9px] font-black text-violet-400 uppercase tracking-widest">Keyword Token Vector</p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {(image.description || '').split(' ').filter(w => w.trim().length > 0).map((word, i) => (
+                                            <span key={i} className="px-2 py-0.5 bg-slate-700 text-white text-[10px] font-mono rounded-md">{word.toLowerCase()}</span>
+                                        ))}
+                                        {!image.description && <span className="text-[10px] text-violet-400 italic">No description provided</span>}
+                                    </div>
+                                    <p className="text-[9px] text-violet-600/70 leading-relaxed italic">
+                                        Each word becomes a key in the Inverted Index. Images are stored under their matching tokens.
+                                    </p>
+                                    <p className="text-[9px] uppercase font-black text-violet-400 tracking-widest pt-1 border-t border-violet-100">Information source: Textual Metadata</p>
+                                </div>
+                            ) : image.color_stats ? (
                                 <div className="space-y-3">
                                     <div className="flex justify-between text-[10px] font-bold text-violet-400">
                                         <span>COLOR DISTRIBUTION</span>
@@ -488,17 +502,18 @@ function FeatureRepresentationModal({ image, onClose }) {
                                     <p className="text-[10px] text-violet-600/70 leading-relaxed italic">
                                         The algorithm reduced millions of pixels into these primary statistics.
                                     </p>
+                                    <p className="text-[9px] uppercase font-black text-violet-400 tracking-widest pt-1 border-t border-violet-100">
+                                        Information source: {image.algorithm === 'CLIP' ? 'Semantic Neural Embedding' : `${image.algorithm} Visual Features`}
+                                    </p>
                                 </div>
                             ) : (
-                                <div className="p-4 bg-white/50 rounded-xl font-mono text-xs text-violet-700 break-all leading-relaxed relative group">
-                                    {image.type === 'TBIR'
-                                        ? `Symbolic Representation: ["${(image.description || 'No description').split(' ').join('", "')}"]`
-                                        : (image.description && image.algorithm === 'CLIP' ? `"${image.description}"` : `Feature Descriptor: [${Array.from({ length: 8 }).map(() => (Math.random() * 0.9).toFixed(2)).join(', ')} ...]`)}
-                                    <div className="mt-4 flex items-center justify-between">
-                                        <p className="text-[9px] uppercase font-black opacity-50">
-                                            {image.type === 'TBIR' ? "Information source: Textual Metadata" : image.algorithm === 'CLIP' ? "Information source: Semantic Neural Embedding" : `Information source: ${image.algorithm} Visual Features`}
-                                        </p>
-                                    </div>
+                                <div className="p-4 bg-white/50 rounded-xl font-mono text-xs text-violet-700 break-all leading-relaxed">
+                                    {image.algorithm === 'CLIP' && image.description
+                                        ? `"${image.description}"`
+                                        : `Feature Descriptor: [${Array.from({ length: 8 }).map(() => (Math.random() * 0.9).toFixed(2)).join(', ')} ...]`}
+                                    <p className="text-[9px] uppercase font-black opacity-50 mt-3">
+                                        Information source: {image.algorithm === 'CLIP' ? 'Semantic Neural Embedding' : `${image.algorithm || 'Visual'} Features`}
+                                    </p>
                                 </div>
                             )}
                         </div>
@@ -526,17 +541,32 @@ function FeatureRepresentationModal({ image, onClose }) {
         </div>
     );
 }
-
 // ─── INDEX GALLERY ──────────────────────────────────────────────────────────
 function IndexGallery({ images, totalImages, onClear, algo, onSelectImage }) {
     if (images.length === 0 && totalImages === 0) return null;
+
+    const isTBIR = algo.type === 'TBIR';
+
+    // Build inverted index map: word -> [images that have it]
+    const invertedIndexMap = React.useMemo(() => {
+        if (!isTBIR) return null;
+        const map = {};
+        images.forEach(img => {
+            const words = (img.description || '').toLowerCase().split(/\s+/).filter(w => w.length > 0);
+            words.forEach(word => {
+                if (!map[word]) map[word] = [];
+                if (!map[word].find(x => x.name === img.name)) map[word].push(img);
+            });
+        });
+        return map;
+    }, [images, isTBIR]);
 
     return (
         <section className="mt-12 p-8 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
             <div className="flex justify-between items-center mb-8">
                 <div>
                     <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
-                        🖼️ {algo.name} Pool
+                        {isTBIR ? '📋' : '🖼️'} {algo.name} Pool
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-black uppercase tracking-widest border border-blue-200">
                             {images.length} Images Indexed
                         </span>
@@ -551,44 +581,72 @@ function IndexGallery({ images, totalImages, onClear, algo, onSelectImage }) {
                 </button>
             </div>
 
-            {algo.type === 'TBIR' && (
-                <div className="mb-6 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
-                    <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-xl">📝</div>
-                    <div>
-                        <p className="text-xs font-black text-gray-800 uppercase tracking-widest">Organization: Inverted Index</p>
-                        <p className="text-[10px] text-gray-400">Images below are linked to their manually assigned text descriptors.</p>
-                    </div>
-                </div>
-            )}
-
             {images.length > 0 ? (
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
-                    {images.map((img, i) => (
-                        <div
-                            key={i}
-                            onClick={() => onSelectImage(img)}
-                            className="group relative bg-white p-2 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer"
-                        >
-                            <img src={img.url || img.preview} alt={img.name} className="w-full aspect-square object-cover rounded-xl border mb-2" />
-                            <div className="px-1">
-                                <p className="text-[10px] font-bold text-gray-400 truncate uppercase tracking-tighter">{img.name}</p>
-                                <div className="flex items-center justify-between mt-1">
-                                    <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md font-bold">{img.algorithm || 'INDEXED'}</span>
-                                    {img.keypoints > 0 && <span className="text-[9px] text-gray-400 font-mono">{img.keypoints} pts</span>}
-                                </div>
-                                {img.color_stats && <ColorBar stats={img.color_stats} />}
-                                {img.description && (
-                                    <p className="mt-1 text-[9px] text-gray-800 font-bold italic truncate border-t border-gray-50 pt-1">
-                                        "{img.description}"
-                                    </p>
-                                )}
-                                <div className="mt-2 text-[8px] text-center font-bold text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">
-                                    Detailed Analysis →
-                                </div>
+                isTBIR && invertedIndexMap ? (
+                    // ── TBIR: Inverted Index Table View ───────────────────────
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2 mb-4 p-3 bg-white rounded-xl border border-gray-100 shadow-sm">
+                            <span className="text-lg">📝</span>
+                            <div>
+                                <p className="text-xs font-black text-gray-800 uppercase tracking-widest">Organization: Inverted Index</p>
+                                <p className="text-[10px] text-gray-400">{Object.keys(invertedIndexMap).length} unique keywords → {images.length} images</p>
                             </div>
                         </div>
-                    ))}
-                </div>
+                        {Object.entries(invertedIndexMap).sort((a, b) => b[1].length - a[1].length).map(([word, imgs]) => (
+                            <div key={word} className="flex items-center gap-3 bg-white p-3 rounded-2xl border border-gray-100 hover:shadow-md transition-all">
+                                {/* Keyword column */}
+                                <div className="w-32 flex-shrink-0">
+                                    <span className="inline-block px-3 py-1 bg-slate-800 text-white text-[11px] font-mono font-bold rounded-lg">{word}</span>
+                                    <p className="text-[9px] text-gray-400 mt-0.5 font-bold">{imgs.length} image{imgs.length > 1 ? 's' : ''}</p>
+                                </div>
+                                {/* Arrow */}
+                                <span className="text-gray-300 text-sm">→</span>
+                                {/* Matching images */}
+                                <div className="flex flex-wrap gap-2">
+                                    {imgs.map((img, j) => (
+                                        <div
+                                            key={j}
+                                            onClick={() => onSelectImage(img)}
+                                            className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-2 py-1 cursor-pointer hover:bg-violet-50 hover:border-violet-200 transition-all group"
+                                        >
+                                            <img src={img.url || img.preview} alt={img.name} className="w-8 h-8 rounded-lg object-cover border border-gray-100" />
+                                            <p className="text-[9px] text-gray-600 font-bold max-w-[80px] truncate group-hover:text-violet-700">{img.name}</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    // ── Visual: flat image grid ────────────────────────────────
+                    <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
+                        {images.map((img, i) => (
+                            <div
+                                key={i}
+                                onClick={() => onSelectImage(img)}
+                                className="group relative bg-white p-2 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer"
+                            >
+                                <img src={img.url || img.preview} alt={img.name} className="w-full aspect-square object-cover rounded-xl border mb-2" />
+                                <div className="px-1">
+                                    <p className="text-[10px] font-bold text-gray-400 truncate uppercase tracking-tighter">{img.name}</p>
+                                    <div className="flex items-center justify-between mt-1">
+                                        <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md font-bold">{img.algorithm || 'INDEXED'}</span>
+                                        {img.keypoints > 0 && <span className="text-[9px] text-gray-400 font-mono">{img.keypoints} pts</span>}
+                                    </div>
+                                    {img.color_stats && <ColorBar stats={img.color_stats} />}
+                                    {img.description && (
+                                        <p className="mt-1 text-[9px] text-gray-800 font-bold italic truncate border-t border-gray-50 pt-1">
+                                            "{img.description}"
+                                        </p>
+                                    )}
+                                    <div className="mt-2 text-[8px] text-center font-bold text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">
+                                        Detailed Analysis →
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                )
             ) : (
                 <div className="py-20 text-center text-gray-300">
                     <div className="text-6xl mb-4">📂</div>
