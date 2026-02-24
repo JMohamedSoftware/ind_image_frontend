@@ -988,49 +988,24 @@ const HomePage = () => {
                 {/* ── Index Gallery ────────────────────────────────────────── */}
                 <IndexGallery images={indexedImages} onClear={handleClearIndex} algo={algo} onSelectImage={setSelectedLibraryImage} />
 
-                {/* ── Comparison table ─────────────────────────────────────── */}
-                <section>
-                    <SectionHeader number="📚" title="Algorithm Reference" sub="Side-by-side technical comparison" />
-                    <div className="rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
-                        <table className="w-full text-sm">
-                            <thead>
-                                <tr className="bg-gray-50 border-b border-gray-200">
-                                    <th className="text-left p-4 font-bold text-gray-500">Property</th>
-                                    {ALGORITHMS.map(a => <th key={a.id} className="text-left p-4 font-bold" style={{ color: a.accent }}>{a.name}</th>)}
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {[
-                                    { label: 'Badge', key: 'badge' },
-                                    { label: 'Type', key: 'descriptorType' },
-                                    { label: 'Output Size', key: 'descriptorSize' },
-                                    { label: 'Metric', key: 'matchMetric' },
-                                    { label: 'Rel. Accuracy', key: 'accuracy', isDots: true },
-                                    { label: 'Rel. Speed', key: 'speed', isDots: true },
-                                ].map((prop, i) => (
-                                    <tr key={prop.label} className={`border-b border-gray-100 ${i % 2 === 0 ? '' : 'bg-gray-50/50'}`}>
-                                        <td className="p-4 font-semibold text-gray-600">{prop.label}</td>
-                                        {ALGORITHMS.map(a => (
-                                            <td key={a.id} className="p-4 text-gray-700 text-xs">
-                                                {prop.isDots ? (
-                                                    <Dots score={a[prop.key]} color={a.accent} />
-                                                ) : (
-                                                    <span className="font-mono">{a[prop.key]}</span>
-                                                )}
-                                            </td>
-                                        ))}
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-                </section>
             </main>
 
             <footer className="border-t border-gray-200 bg-white">
-                <div className="max-w-4xl mx-auto px-4 py-8 text-center text-sm text-gray-400">
-                    <p>Built with <strong>FastAPI</strong> · <strong>OpenCV</strong> · <strong>React</strong> · <strong>Cloudinary</strong></p>
-                    <p className="mt-1">An educational demo of computer vision feature matching</p>
+                <div className="max-w-4xl mx-auto px-4 py-10 text-center">
+                    <div className="mb-4 flex items-center justify-center gap-3">
+                        <div className="h-px w-8 bg-gray-200"></div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.3em] text-gray-400">Project Credits</p>
+                        <div className="h-px w-8 bg-gray-200"></div>
+                    </div>
+                    <p className="text-lg font-black text-gray-900 mb-2">
+                        Ma5dom by: <span className="text-violet-600">Mohamed Jbeli, Mohamed Aziz Mannai, Maram Ben Amara, Khawla Balti, Nour Saidani</span>
+                    </p>
+                    <p className="text-xs text-gray-400 font-medium">
+                        Developed with <strong>FastAPI</strong> · <strong>OpenCV</strong> · <strong>React</strong> · <strong>Cloudinary</strong>
+                    </p>
+                    <p className="mt-1 text-[10px] text-gray-300 uppercase font-bold tracking-widest">
+                        Academic Visual Search Systems © 2026
+                    </p>
                 </div>
             </footer>
 
