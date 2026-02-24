@@ -355,19 +355,46 @@ function IndexedCard({ image, algo, onComplete }) {
 }
 
 // ─── SEARCH LIVE LOG PANEL ────────────────────────────────────────────────────
-function SearchLivePanel({ queryImage, algo, steps }) {
+function SearchLivePanel({ queryImage, algo, steps, textQuery }) {
+    const isFusion = algo.id === 'CLIP' && queryImage && textQuery?.trim();
+
     return (
-        <div className="rounded-2xl border bg-white p-5 shadow-sm" style={{ borderColor: algo.border }}>
+        <div className="rounded-2xl border bg-white p-5 shadow-sm overflow-hidden h-full flex flex-col" style={{ borderColor: algo.border }}>
             <div className="flex gap-3 items-center mb-4">
                 {queryImage && (
-                    <img src={queryImage.preview} alt={queryImage.name} className="w-14 h-14 rounded-xl object-cover border" style={{ borderColor: algo.border }} />
+                    <div className="relative">
+                        <img src={queryImage.preview} alt={queryImage.name} className="w-14 h-14 rounded-xl object-cover border" style={{ borderColor: algo.border }} />
+                        {isFusion && <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center text-[8px] text-white border-2 border-white">🎨</div>}
+                    </div>
                 )}
-                <div>
-                    <p className="text-xs text-gray-400">{queryImage?.name || 'Query image'}</p>
-                    <p className="font-bold text-sm" style={{ color: algo.accent }}>🔍 {algo.name} Search Process</p>
+                <div className="min-w-0 flex-1">
+                    <p className="text-[10px] text-gray-400 truncate uppercase font-black tracking-widest">{queryImage?.name || 'Search Query'}</p>
+                    <p className="font-bold text-sm truncate" style={{ color: algo.accent }}>{isFusion ? '🧠 Neural Fusion Engine' : `🔍 ${algo.name} Search Pipeline`}</p>
                 </div>
             </div>
-            <LiveLog steps={steps} />
+
+            {isFusion && (
+                <div className="mb-4 p-3 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-around gap-2 animate-in fade-in zoom-in duration-500">
+                    <div className="text-center">
+                        <div className="text-[10px] font-black text-blue-400 uppercase mb-1">IMAGE</div>
+                        <div className="w-8 h-2 bg-blue-200 rounded-full"></div>
+                    </div>
+                    <div className="text-lg text-blue-300">＋</div>
+                    <div className="text-center">
+                        <div className="text-[10px] font-black text-blue-400 uppercase mb-1">TEXT</div>
+                        <div className="w-8 h-2 bg-blue-200 rounded-full"></div>
+                    </div>
+                    <div className="text-lg text-blue-300">＝</div>
+                    <div className="text-center">
+                        <div className="text-[10px] font-black text-blue-600 uppercase mb-1">FUSION</div>
+                        <div className="w-8 h-2 bg-blue-600 rounded-full animate-pulse"></div>
+                    </div>
+                </div>
+            )}
+
+            <div className="flex-1 overflow-y-auto pr-1">
+                <LiveLog steps={steps} />
+            </div>
         </div>
     );
 }
@@ -451,7 +478,7 @@ function FeatureRepresentationModal({ image, onClose }) {
                         {/* Feature Data Display */}
                         <div className="bg-violet-50 border border-violet-100 p-5 rounded-2xl">
                             <h4 className="text-[10px] font-black text-violet-600 uppercase mb-3 tracking-widest">Digital Signature (Step 4)</h4>
-                            {image.color_stats ? (
+                            {image.color_stats && image.type !== 'TBIR' ? (
                                 <div className="space-y-3">
                                     <div className="flex justify-between text-[10px] font-bold text-violet-400">
                                         <span>COLOR DISTRIBUTION</span>
@@ -459,12 +486,17 @@ function FeatureRepresentationModal({ image, onClose }) {
                                     </div>
                                     <ColorBar stats={image.color_stats} />
                                     <p className="text-[10px] text-violet-600/70 leading-relaxed italic">
-                                        The algorithm reduced million of pixels into these 3 primary statistics.
+                                        The algorithm reduced millions of pixels into these primary statistics.
                                     </p>
                                 </div>
                             ) : (
-                                <div className="p-3 bg-white/50 rounded-xl font-mono text-[10px] text-violet-700 break-all leading-tight">
-                                    {image.description ? `"${image.description}"` : "Feature Vector: [0.12, 0.85, 0.44, 0.91, 0.22, 0.05, ...]"}
+                                <div className="p-4 bg-white/50 rounded-xl font-mono text-xs text-violet-700 break-all leading-relaxed">
+                                    {image.type === 'TBIR'
+                                        ? `Symbolic Representation: ["${(image.description || 'No description').split(' ').join('", "')}"]`
+                                        : (image.description ? `"${image.description}"` : "Feature Vector: [0.12, 0.85, 0.44, 0.91, 0.22, 0.05, ...]")}
+                                    <p className="mt-2 text-[9px] uppercase font-black opacity-50">
+                                        {image.type === 'TBIR' ? "Information source: Textual Metadata Only" : "Information source: Neural Embedding"}
+                                    </p>
                                 </div>
                             )}
                         </div>
@@ -675,9 +707,11 @@ const HomePage = () => {
     }, [uploadAndIndex]);
 
     // ── Search ────────────────────────────────────────────────────────────────
-    const handleSearch = useCallback(async () => {
-        if (algo.id !== 'CLIP' && !queryImage) return;
-        if (algo.id === 'CLIP' && !textQuery.trim()) return;
+    const handleSearch = useCallback(async (file, explicitText) => {
+        const searchFile = file || queryImage?.file;
+        const searchText = explicitText !== undefined ? explicitText : textQuery;
+
+        if (!searchFile && !searchText) return;
 
         setIsSearching(true);
         setSearchResults(null);
@@ -716,9 +750,12 @@ const HomePage = () => {
                 upd(2, 'running');
 
                 const form = new FormData();
-                form.append('query', textQuery);
+                form.append('query', searchText);
+                form.append('query_text', searchText); // For multimodal backend
                 form.append('algorithm', algo.id);
-                const res = await fetch(`${API_BASE}/api/search/text`, { method: 'POST', body: form });
+
+                const endpoint = (algo.type === 'TBIR' && !searchFile) ? `${API_BASE}/api/search/text` : `${API_BASE}/api/search`;
+                const res = await fetch(endpoint, { method: 'POST', body: form });
                 if (!res.ok) throw new Error(`Server error: ${res.status}`);
                 const data = await res.json();
 
@@ -737,6 +774,7 @@ const HomePage = () => {
                 const form = new FormData();
                 form.append('file', blob, queryImage.name);
                 form.append('algorithm', algo.id);
+                if (searchText) form.append('query_text', searchText);
 
                 await new Promise(r => setTimeout(r, 600));
                 upd(1, 'done', algo.detectorDetail);
@@ -775,10 +813,16 @@ const HomePage = () => {
         setIsDraggingSearch(false);
         const file = (e.dataTransfer?.files || e.target?.files)?.[0];
         if (file?.type.startsWith('image/')) {
-            setQueryImage({ preview: URL.createObjectURL(file), name: file.name });
+            const preview = URL.createObjectURL(file);
+            setQueryImage({ preview, name: file.name, file: file });
             setSearchResults(null);
             setSearchLogSteps([]);
             setSearchError(null);
+
+            // Auto-trigger search if it's a classical algorithm (not CLIP/TBIR where text might be needed)
+            if (algo.type !== 'TBIR' && algo.id !== 'CLIP') {
+                handleSearch(file);
+            }
         }
         if (e.target) e.target.value = '';
     }, []);
@@ -935,40 +979,46 @@ const HomePage = () => {
                 <section>
                     <SectionHeader
                         number="2"
-                        title={algo.id === 'CLIP' ? "Search with Natural Language" : "Search for Similar Images"}
-                        sub={algo.id === 'CLIP' ? "Type a description → CLIP maps pixels to concepts" : "Drop a query image → live matching log shows every step"}
+                        title={algo.id === 'CLIP' ? "Multimodal Semantic Search" : "Visual Retrieval & Matching"}
+                        sub={algo.id === 'CLIP' ? "Combine image + text → CLIP fuses them in neural space" : "Drop a query image → Watch the matching pipeline in real-time"}
                         accent={algo.accent}
                     />
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Left: query selection (image or text) */}
                         <div className="space-y-4">
-                            {algo.type === 'TBIR' || algo.id === 'CLIP' ? (
-                                <div className="rounded-2xl border-2 p-8 bg-white shadow-sm" style={{ borderColor: textQuery ? algo.accent : '#d1d5db' }}>
-                                    <label className="block text-xs font-black text-gray-400 mb-4 uppercase tracking-[0.2em]">
-                                        {algo.type === 'TBIR' ? 'Keyword Query (Inverted Index)' : 'Semantic Search Query'}
-                                    </label>
-                                    <div className="relative">
-                                        <input
-                                            type="text"
-                                            value={textQuery}
-                                            onChange={e => setTextQuery(e.target.value)}
-                                            onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                                            placeholder={algo.type === 'TBIR' ? "Saisir une kelma (ex: 'bacloua', 'fraise')..." : "Example: 'A sunset over the mountains'..."}
-                                            className="w-full text-xl font-black bg-transparent outline-none border-b-4 pb-3 transition-all placeholder:text-gray-200"
-                                            style={{ borderColor: textQuery ? algo.accent : '#f3f4f6' }}
-                                        />
-                                        <div className="mt-6 p-5 rounded-2xl border italic transition-all" style={{ background: algo.light + '80', borderColor: algo.border }}>
-                                            <p className="text-[10px] uppercase font-black mb-2 tracking-widest" style={{ color: algo.accent }}>Educational Insight</p>
-                                            <p className="text-xs leading-relaxed" style={{ color: algo.accent + 'CC' }}>
-                                                {algo.type === 'TBIR'
-                                                    ? "Text-based search doesn't see images. It finds entries in the Inverted Index matching your keyword exactly."
-                                                    : "Deep Learning search matches meanings, not just words. It computes the distance between your phrase and every image."}
-                                            </p>
+                            {/* 1. TEXT INPUT (For TBIR and CLIP) */}
+                            {(algo.type === 'TBIR' || algo.id === 'CLIP') && (
+                                <div className="rounded-2xl border-2 p-8 bg-white shadow-sm flex flex-col justify-between" style={{ borderColor: textQuery ? algo.accent : '#d1d5db' }}>
+                                    <div>
+                                        <label className="block text-xs font-black text-gray-400 mb-4 uppercase tracking-[0.2em]">
+                                            {algo.type === 'TBIR' ? 'Keyword Query (Inverted Index)' : 'Semantic Search Query'}
+                                        </label>
+                                        <div className="relative">
+                                            <input
+                                                type="text"
+                                                value={textQuery}
+                                                onChange={e => setTextQuery(e.target.value)}
+                                                onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                                                placeholder={algo.type === 'TBIR' ? "Saisir une kelma..." : "A sunset over the mountains..."}
+                                                className="w-full text-xl font-black bg-transparent outline-none border-b-4 pb-3 transition-all placeholder:text-gray-200"
+                                                style={{ borderColor: textQuery ? algo.accent : '#f3f4f6' }}
+                                            />
                                         </div>
                                     </div>
+                                    <div className="mt-6 p-4 rounded-xl border italic" style={{ background: algo.light + '40', borderColor: algo.border + '40' }}>
+                                        <p className="text-[10px] uppercase font-black mb-1 tracking-widest" style={{ color: algo.accent }}>Educational Insight</p>
+                                        <p className="text-[10px] leading-relaxed" style={{ color: algo.accent + 'CC' }}>
+                                            {algo.id === 'CLIP'
+                                                ? "CLIP fuses text and image in a shared space. Use both for best results."
+                                                : "TBIR finds exact keywords in indexed descriptions."}
+                                        </p>
+                                    </div>
                                 </div>
-                            ) : (
+                            )}
+
+                            {/* 2. IMAGE INPUT (For CBIR and CLIP) */}
+                            {algo.type !== 'TBIR' && (
                                 <div
                                     onClick={() => searchInputRef.current?.click()}
                                     onDragOver={e => { e.preventDefault(); setIsDraggingSearch(true); }}
@@ -982,17 +1032,17 @@ const HomePage = () => {
                                         <img src={queryImage.preview} alt={queryImage.name} className="w-full aspect-square object-cover" />
                                     ) : (
                                         <div className="aspect-square flex flex-col items-center justify-center p-8 text-center">
-                                            <div className="text-4xl mb-3">🔍</div>
-                                            <p className="font-bold text-gray-700 mb-1">Drop your query image</p>
-                                            <p className="text-xs text-gray-400">The image you want to find matches for</p>
+                                            <div className="text-4xl mb-3">�️</div>
+                                            <p className="font-bold text-gray-700 mb-1">{algo.id === 'CLIP' ? 'Optional: Visual Context' : 'Drop your query image'}</p>
+                                            <p className="text-xs text-gray-400">{algo.id === 'CLIP' ? 'Optional refinement' : 'The image to match'}</p>
                                         </div>
                                     )}
                                 </div>
                             )}
 
                             <button
-                                onClick={handleSearch}
-                                disabled={isSearching || (algo.id !== 'CLIP' && !queryImage) || (algo.id === 'CLIP' && !textQuery.trim()) || indexedImages.length === 0}
+                                onClick={() => handleSearch()}
+                                disabled={isSearching || (!queryImage && !textQuery.trim()) || indexedImages.length === 0}
                                 className="w-full py-4 rounded-2xl font-black text-white text-lg transition-all active:scale-95 disabled:grayscale disabled:opacity-50 shadow-lg hover:shadow-xl"
                                 style={{ background: algo.accent }}
                             >
@@ -1005,7 +1055,7 @@ const HomePage = () => {
                         {/* Right: live log */}
                         <div>
                             {searchLogSteps.length > 0 ? (
-                                <SearchLivePanel queryImage={queryImage} algo={algo} steps={searchLogSteps} />
+                                <SearchLivePanel queryImage={queryImage} algo={algo} steps={searchLogSteps} textQuery={textQuery} />
                             ) : (
                                 <div className="rounded-2xl border border-gray-200 bg-white p-8 text-center text-gray-300 h-full flex flex-col items-center justify-center">
                                     <div className="text-5xl mb-3">📋</div>
@@ -1051,10 +1101,7 @@ const HomePage = () => {
                         <div className="h-px w-8 bg-gray-200"></div>
                     </div>
                     <p className="text-lg font-black text-gray-900 mb-2">
-                        Ma5dom by: <span className="text-violet-600">Mohamed Jbeli, Mohamed Aziz Mannai, Maram Ben Amara, Khawla Balti, Nour Saidani</span>
-                    </p>
-                    <p className="text-xs text-gray-400 font-medium">
-                        Developed with <strong>FastAPI</strong> · <strong>OpenCV</strong> · <strong>React</strong> · <strong>Cloudinary</strong>
+                        by: <span className="text-violet-600">Mohamed Jbeli, Mohamed Aziz Mannai, Maram Ben Amara, Khawla Balti, Nour Saidani</span>
                     </p>
                     <p className="mt-1 text-[10px] text-gray-300 uppercase font-bold tracking-widest">
                         Academic Visual Search Systems © 2026
@@ -1096,9 +1143,13 @@ function DetailedComparison({ queryImage, selectedResult, onClose }) {
 
                     <div className="w-full grid grid-cols-2 gap-4 mb-8">
                         <div className="text-center">
-                            <p className="text-[10px] uppercase font-bold text-gray-400 mb-2 tracking-widest">Query Image</p>
-                            <div className="aspect-square rounded-2xl overflow-hidden border-4 border-white shadow-lg">
-                                <img src={queryImage?.preview || queryImage?.url} className="w-full h-full object-cover" />
+                            <p className="text-[10px] uppercase font-bold text-gray-400 mb-2 tracking-widest">Query {queryImage?.preview ? 'Image' : 'Text'}</p>
+                            <div className="aspect-square rounded-2xl overflow-hidden border-4 border-white shadow-lg bg-gray-100 flex items-center justify-center">
+                                {queryImage?.preview ? (
+                                    <img src={queryImage.preview} className="w-full h-full object-cover" />
+                                ) : (
+                                    <div className="text-3xl">🔤</div>
+                                )}
                             </div>
                         </div>
                         <div className="text-center">
@@ -1112,27 +1163,55 @@ function DetailedComparison({ queryImage, selectedResult, onClose }) {
                     <div className="w-full space-y-6">
                         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                             <h4 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2">
-                                📊 Visual Distribution Comparison
+                                {selectedResult.algorithm === 'CLIP' ? '🧠 Semantic Neural Alignment' : selectedResult.type === 'TBIR' ? '📋 Textual Inverted Index Match' : '📊 Visual Distribution Comparison'}
                             </h4>
-                            <div className="space-y-4">
-                                <div>
-                                    <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
-                                        <span>QUERY FEATURE</span>
-                                        <span>R:{queryColors.r}% G:{queryColors.g}% B:{queryColors.b}%</span>
+                            {selectedResult.algorithm === 'CLIP' ? (
+                                <div className="p-4 bg-blue-50/50 rounded-xl border border-dashed border-blue-200">
+                                    <p className="text-xs text-blue-800 italic leading-relaxed">
+                                        Multi-modal alignment: The distance between the query context (text + image) and the target feature vector.
+                                        The system "sees" concepts, not just pixels.
+                                    </p>
+                                    <div className="mt-4 flex items-center gap-3">
+                                        <div className="px-2 py-1 bg-white border border-blue-100 rounded text-[9px] font-black text-blue-600">SEMANTIC SPACE</div>
+                                        <div className="flex-1 h-1 bg-blue-100 rounded-full overflow-hidden">
+                                            <div className="h-full bg-blue-500 animate-pulse" style={{ width: `${selectedResult.similarityScore}%` }}></div>
+                                        </div>
                                     </div>
-                                    <ColorBar stats={queryColors} />
                                 </div>
-                                <div className="flex justify-center py-1 opacity-20">
-                                    <span className="text-xl">↕</span>
-                                </div>
-                                <div>
-                                    <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
-                                        <span>TARGET FEATURE</span>
-                                        <span>R:{targetColors.r}% G:{targetColors.g}% B:{targetColors.b}%</span>
+                            ) : selectedResult.type === 'TBIR' ? (
+                                <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+                                    <p className="text-xs text-gray-500 italic">
+                                        Academic Purity: Text-based algorithms do not extract visual features. The match is strictly based on metadata keyword intersection.
+                                    </p>
+                                    <div className="mt-4 flex flex-wrap gap-2">
+                                        {(selectedResult.description || "").split(' ').map((word, i) => (
+                                            <span key={i} className="px-2 py-1 bg-white border border-gray-100 rounded-md text-[10px] font-bold text-gray-500">
+                                                {word}
+                                            </span>
+                                        ))}
                                     </div>
-                                    <ColorBar stats={targetColors} />
                                 </div>
-                            </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    <div>
+                                        <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
+                                            <span>QUERY FEATURE</span>
+                                            <span>{queryColors ? `R:${queryColors.r}% G:${queryColors.g}% B:${queryColors.b}%` : 'N/A'}</span>
+                                        </div>
+                                        {queryColors && <ColorBar stats={queryColors} />}
+                                    </div>
+                                    <div className="flex justify-center py-1 opacity-20">
+                                        <span className="text-xl">↕</span>
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
+                                            <span>TARGET FEATURE</span>
+                                            {targetColors && <span>R:{targetColors.r}% G:{targetColors.g}% B:{targetColors.b}%</span>}
+                                        </div>
+                                        {targetColors && <ColorBar stats={targetColors} />}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
