@@ -380,6 +380,12 @@ function ResultCard({ result, rank, onSelect }) {
                     </div>
                 )}
 
+                {result.description && (
+                    <p className="mb-3 text-[9px] text-gray-800 font-bold italic line-clamp-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
+                        "{result.description}"
+                    </p>
+                )}
+
                 <div className="flex items-center justify-between pt-2 border-t border-gray-50">
                     <span className="text-[10px] text-gray-400">{result.matchesCount > 0 ? `${result.matchesCount} matches` : 'Vector Similarity'}</span>
                     <button className="text-[10px] font-bold text-blue-600 hover:underline">View Analysis →</button>
@@ -389,8 +395,89 @@ function ResultCard({ result, rank, onSelect }) {
     );
 }
 
+// ─── FEATURE REPRESENTATION MODAL (7-Step Process) ──────────────────────────
+function FeatureRepresentationModal({ image, onClose }) {
+    if (!image) return null;
+
+    const steps = [
+        { name: "1. ACQUISITION", desc: "Digital capture & data ingestion", status: "Done", icon: "📸" },
+        { name: "2. PRÉTRAITEMENT", desc: "Resize, Grayscale, Noise reduction", status: "Done", icon: "⚙️" },
+        { name: "3. ANALYSE D’IMAGE", desc: `Feature extraction via ${image.algorithm || 'Algorithm'}`, status: "Done", icon: "🔍" },
+        { name: "4. REPRÉSENTATION", desc: "Numerical feature vector construction", status: "Current", icon: "📊" },
+        { name: "5. INDEXATION", desc: "Mapping features to searchable database", status: "Done", icon: "🏷️" },
+        { name: "6. STOCKAGE", desc: "Persistent storage in index.pkl", status: "Done", icon: "💾" },
+        { name: "7. RECHERCHE", desc: "Ready for retrieval operations", status: "Ready", icon: "🚀" }
+    ];
+
+    return (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-300">
+            <div className="bg-white w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row h-full max-h-[85vh]">
+                <div className="w-full md:w-1/2 bg-gray-100 flex items-center justify-center p-8 border-r border-gray-100">
+                    <div className="relative group">
+                        <img src={image.url || image.preview} className="max-w-full max-h-[60vh] object-contain rounded-2xl shadow-2xl transition-transform duration-500 group-hover:scale-105" />
+                        <div className="absolute top-4 left-4 bg-black/60 backdrop-blur-md text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-widest">
+                            {image.algorithm} Reference
+                        </div>
+                    </div>
+                </div>
+
+                <div className="w-full md:w-1/2 p-8 flex flex-col">
+                    <div className="flex justify-between items-start mb-6">
+                        <div>
+                            <h2 className="text-2xl font-black text-gray-900 leading-tight">Représentation des Caractéristiques</h2>
+                            <p className="text-xs text-gray-400 mt-1 uppercase font-bold tracking-tighter">Fichier: {image.name}</p>
+                        </div>
+                        <button onClick={onClose} className="p-2 bg-gray-50 text-gray-400 rounded-full hover:bg-gray-100 transition-colors">✕</button>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+                        {/* Feature Data Display */}
+                        <div className="bg-violet-50 border border-violet-100 p-5 rounded-2xl">
+                            <h4 className="text-[10px] font-black text-violet-600 uppercase mb-3 tracking-widest">Digital Signature (Step 4)</h4>
+                            {image.color_stats ? (
+                                <div className="space-y-3">
+                                    <div className="flex justify-between text-[10px] font-bold text-violet-400">
+                                        <span>COLOR DISTRIBUTION</span>
+                                        <span>R:{image.color_stats.r}% G:{image.color_stats.g}% B:{image.color_stats.b}%</span>
+                                    </div>
+                                    <ColorBar stats={image.color_stats} />
+                                    <p className="text-[10px] text-violet-600/70 leading-relaxed italic">
+                                        The algorithm reduced million of pixels into these 3 primary statistics.
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="p-3 bg-white/50 rounded-xl font-mono text-[10px] text-violet-700 break-all leading-tight">
+                                    {image.description ? `"${image.description}"` : "Feature Vector: [0.12, 0.85, 0.44, 0.91, 0.22, 0.05, ...]"}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* 7 Academic Steps */}
+                        <div className="space-y-3">
+                            <h4 className="text-[10px] font-black text-gray-400 uppercase tracking-widest">System Pipeline Status</h4>
+                            <div className="grid grid-cols-1 gap-2">
+                                {steps.map((s, i) => (
+                                    <div key={i} className={`flex items-center gap-3 p-3 rounded-xl border transition-all ${s.status === 'Current' ? 'border-violet-300 bg-violet-50/50 scale-[1.02]' : 'border-gray-50 bg-gray-50/30 opacity-70'}`}>
+                                        <div className="text-lg">{s.icon}</div>
+                                        <div className="flex-1">
+                                            <p className={`text-[10px] font-black ${s.status === 'Current' ? 'text-violet-600' : 'text-gray-700'}`}>{s.name}</p>
+                                            <p className="text-[9px] text-gray-400 leading-tight">{s.desc}</p>
+                                        </div>
+                                        {s.status === 'Done' && <div className="text-green-500 text-[10px]">✔</div>}
+                                        {s.status === 'Current' && <div className="flex gap-0.5"><div className="w-1 h-1 bg-violet-600 rounded-full animate-bounce"></div><div className="w-1 h-1 bg-violet-600 rounded-full animate-bounce delay-75"></div><div className="w-1 h-1 bg-violet-600 rounded-full animate-bounce delay-150"></div></div>}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 // ─── INDEX GALLERY ──────────────────────────────────────────────────────────
-function IndexGallery({ images, onClear, algo }) {
+function IndexGallery({ images, onClear, algo, onSelectImage }) {
     if (images.length === 0) return null;
 
     return (
@@ -407,9 +494,22 @@ function IndexGallery({ images, onClear, algo }) {
                     🗑️ Clear Database
                 </button>
             </div>
+            {algo.type === 'TBIR' && (
+                <div className="mb-6 p-4 bg-white rounded-2xl border border-gray-100 shadow-sm flex items-center gap-4">
+                    <div className="w-10 h-10 bg-slate-100 rounded-full flex items-center justify-center text-xl">📝</div>
+                    <div>
+                        <p className="text-xs font-black text-gray-800 uppercase tracking-widest">Organization: Inverted Index</p>
+                        <p className="text-[10px] text-gray-400">Images below are linked to their manually assigned text descriptors.</p>
+                    </div>
+                </div>
+            )}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-6">
                 {images.map((img, i) => (
-                    <div key={i} className="group relative bg-white p-2 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all">
+                    <div
+                        key={i}
+                        onClick={() => onSelectImage(img)}
+                        className="group relative bg-white p-2 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer"
+                    >
                         <img src={img.url || img.preview} alt={img.name} className="w-full aspect-square object-cover rounded-xl border mb-2" />
                         <div className="px-1">
                             <p className="text-[10px] font-bold text-gray-400 truncate uppercase tracking-tighter">{img.name}</p>
@@ -419,10 +519,13 @@ function IndexGallery({ images, onClear, algo }) {
                             </div>
                             {img.color_stats && <ColorBar stats={img.color_stats} />}
                             {img.description && (
-                                <p className="mt-1 text-[9px] text-gray-500 italic truncate border-t border-gray-50 pt-1">
+                                <p className="mt-1 text-[9px] text-gray-800 font-bold italic truncate border-t border-gray-50 pt-1">
                                     "{img.description}"
                                 </p>
                             )}
+                            <div className="mt-2 text-[8px] text-center font-bold text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">
+                                Detailed Analysis →
+                            </div>
                         </div>
                     </div>
                 ))}
@@ -448,10 +551,16 @@ const HomePage = () => {
     const [selectedDetailResult, setSelectedDetailResult] = useState(null);
     const indexInputRef = useRef(null);
     const searchInputRef = useRef(null);
+    const [selectedLibraryImage, setSelectedLibraryImage] = useState(null);
 
     // Fetch index on mount and when activeType changes
     useEffect(() => {
         setIndexedImages([]); // Clear previous type images
+        setSearchResults(null); // Clear previous results
+        setQueryImage(null); // Clear previous query image
+        setTextQuery(''); // Clear previous text query
+        setSearchLogSteps([]); // Clear logs
+
         fetch(`${API_BASE}/api/index/list?type=${activeType.id}`)
             .then(r => r.json())
             .then(data => {
@@ -724,16 +833,28 @@ const HomePage = () => {
                     >
                         <input ref={indexInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleIndexFiles} />
 
-                        <div className="mb-4 bg-white/50 backdrop-blur-sm rounded-xl p-2 border border-gray-200 shadow-inner max-w-sm mx-auto">
-                            <input
-                                type="text"
-                                placeholder="Optional: Label/Description for these images..."
-                                className="w-full px-4 py-2 bg-transparent text-sm focus:outline-none placeholder:text-gray-400"
-                                value={indexDescription}
-                                onChange={(e) => setIndexDescription(e.target.value)}
-                                onClick={(e) => e.stopPropagation()}
-                            />
-                        </div>
+                        {algo.type === 'TBIR' ? (
+                            <div className="mb-6 bg-amber-50 rounded-2xl p-6 border-2 border-amber-200 shadow-sm transition-all animate-in slide-in-from-top duration-500">
+                                <label className="block text-xs font-black text-amber-600 mb-2 uppercase tracking-[0.2em] text-left">
+                                    Step 4: Représentation des caractéristiques (Mots-clés)
+                                </label>
+                                <input
+                                    type="text"
+                                    placeholder="Entrez les mots-clés manuellement (ex: chat, blanc, canapé)..."
+                                    className="w-full px-5 py-4 bg-white rounded-xl border-2 border-amber-100 text-lg font-bold focus:outline-none focus:border-amber-400 placeholder:text-amber-200 shadow-inner"
+                                    value={indexDescription}
+                                    onChange={(e) => setIndexDescription(e.target.value)}
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                                <p className="mt-2 text-[10px] text-amber-500 text-left italic">
+                                    En mode TBIR, vous devez associer du texte manuellement car l'algorithme ne regarde pas le contenu visuel.
+                                </p>
+                            </div>
+                        ) : (
+                            <div className="mb-4 text-xs text-gray-400 bg-gray-50 py-2 rounded-lg border border-dashed border-gray-200">
+                                ℹ️ {algo.name} extracts features automatically. No manual tagging needed.
+                            </div>
+                        )}
 
                         <div className="text-4xl mb-3">{isDraggingIndex ? '✨' : '📁'}</div>
                         <p className="font-bold text-gray-700 mb-1">Drop images here or click to select</p>
@@ -865,7 +986,7 @@ const HomePage = () => {
                 </section>
 
                 {/* ── Index Gallery ────────────────────────────────────────── */}
-                <IndexGallery images={indexedImages} onClear={handleClearIndex} algo={algo} />
+                <IndexGallery images={indexedImages} onClear={handleClearIndex} algo={algo} onSelectImage={setSelectedLibraryImage} />
 
                 {/* ── Comparison table ─────────────────────────────────────── */}
                 <section>
@@ -918,6 +1039,13 @@ const HomePage = () => {
                     queryImage={queryImage || { filename: textQuery, algorithm: 'CLIP' }}
                     selectedResult={selectedDetailResult}
                     onClose={() => setSelectedDetailResult(null)}
+                />
+            )}
+
+            {selectedLibraryImage && (
+                <FeatureRepresentationModal
+                    image={selectedLibraryImage}
+                    onClose={() => setSelectedLibraryImage(null)}
                 />
             )}
         </div>
