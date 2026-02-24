@@ -903,7 +903,8 @@ const HomePage = () => {
             }
         }
         if (e.target) e.target.value = '';
-    }, []);
+    }, [handleSearch]);
+
 
     return (
         <div className="min-h-screen bg-gray-50 text-gray-900" style={{ fontFamily: "'Inter', sans-serif" }}>
