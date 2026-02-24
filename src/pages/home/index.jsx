@@ -677,29 +677,53 @@ const HomePage = () => {
     const indexInputRef = useRef(null);
     const searchInputRef = useRef(null);
     const [selectedLibraryImage, setSelectedLibraryImage] = useState(null);
+    const [serverWaking, setServerWaking] = useState(false);
+
 
     // Fetch index on mount and when activeType changes
     useEffect(() => {
-        setIndexedImages([]); // Clear previous type images
-        setSearchResults(null); // Clear previous results
-        setQueryImage(null); // Clear previous query image
-        setTextQuery(''); // Clear previous text query
-        setSearchLogSteps([]); // Clear logs
+        setIndexedImages([]);
+        setSearchResults(null);
+        setQueryImage(null);
+        setTextQuery('');
+        setSearchLogSteps([]);
 
-        fetch(`${API_BASE}/api/index/list?type=${activeType.id}`)
-            .then(r => r.json())
-            .then(data => {
+        // Wake-up aware fetch with retry (for Render free tier cold starts)
+        const fetchWithWakeup = async () => {
+            try {
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 90000); // 90s for Render cold start
+                const r = await fetch(`${API_BASE}/api/index/list?type=${activeType.id}`, { signal: controller.signal });
+                clearTimeout(timeout);
+                setServerWaking(false);
+                const data = await r.json();
                 setIndexedImages(data.map(img => ({
                     ...img,
                     name: img.filename,
                     preview: img.url,
                     keypoints: img.keypoint_count
                 })));
-            })
-            .catch(err => {
-                console.error("Failed to fetch index", err);
-                setSearchError("Backend unreachable. Persistence might be disabled.");
-            });
+            } catch (err) {
+                if (err.name === 'AbortError') {
+                    setSearchError('Server timeout. Render may be starting up — please wait 30s and refresh.');
+                } else {
+                    // Likely Render is waking — show banner and retry after 10s
+                    setServerWaking(true);
+                    setTimeout(fetchWithWakeup, 10000);
+                }
+            }
+        };
+
+        // Check immediately if server is up; if not, show waking banner
+        fetch(`${API_BASE}/`).catch(() => setServerWaking(true));
+        fetchWithWakeup();
+
+        // Keepalive ping every 10 min to prevent Render from sleeping
+        const keepalive = setInterval(() => {
+            fetch(`${API_BASE}/`).catch(() => { });
+        }, 10 * 60 * 1000);
+
+        return () => clearInterval(keepalive);
 
         // Update current algorithm if it doesn't match the new type
         if (algo.type !== activeType.id) {
@@ -910,6 +934,14 @@ const HomePage = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 text-gray-900" style={{ fontFamily: "'Inter', sans-serif" }}>
+
+            {/* ── Server Waking Banner (Render free tier) ──────────────────── */}
+            {serverWaking && (
+                <div className="fixed top-0 inset-x-0 z-[100] bg-amber-400 text-amber-900 text-center py-2 px-4 text-sm font-semibold flex items-center justify-center gap-2 shadow-lg animate-pulse">
+                    <span>⏳</span>
+                    <span>Server is waking up (Render free tier) — please wait 30–60 seconds…</span>
+                </div>
+            )}
 
             {/* ── Type Selector (The 3 Pillars) ─────────────────────────────── */}
             <div className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
