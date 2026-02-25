@@ -683,7 +683,7 @@ const HomePage = () => {
     const [serverWaking, setServerWaking] = useState(false);
 
 
-    // Fetch index on mount and when activeType changes
+    // Fetch index on mount and when algorithm changes
     useEffect(() => {
         setIndexedImages([]);
         setSearchResults(null);
@@ -696,7 +696,8 @@ const HomePage = () => {
             try {
                 const controller = new AbortController();
                 const timeout = setTimeout(() => controller.abort(), 90000); // 90s for Render cold start
-                const r = await fetch(`${API_BASE}/api/index/list?type=${activeType.id}`, { signal: controller.signal });
+                // ALGORITHM ISOLATION: Fetch images only for the currently active algorithm
+                const r = await fetch(`${API_BASE}/api/index/list?algorithm=${algo.id}`, { signal: controller.signal });
                 clearTimeout(timeout);
                 setServerWaking(false);
                 const data = await r.json();
@@ -726,19 +727,20 @@ const HomePage = () => {
             fetch(`${API_BASE}/`).catch(() => { });
         }, 10 * 60 * 1000);
 
-        // Update current algorithm if it doesn't match the new type
+        // Update current algorithm if it doesn't match the new type (maintains category selection)
         if (algo.type !== activeType.id) {
-            setAlgo(ALGORITHMS.find(a => a.type === activeType.id));
+            const defaultAlgo = ALGORITHMS.find(a => a.type === activeType.id);
+            if (defaultAlgo) setAlgo(defaultAlgo);
         }
 
-        // Clear inputs and results when switching types for a clean state
+        // Clear inputs and results when state transitions for a clean state
         setTextQuery('');
         setIndexDescription('');
         setSearchResults(null);
         setSearchError(null);
 
         return () => clearInterval(keepalive);
-    }, [activeType]);
+    }, [activeType, algo]);
 
     const handleClearIndex = async () => {
         if (!confirm("Are you sure you want to delete all indexed images?")) return;
