@@ -568,7 +568,10 @@ function IndexGallery({ images, totalImages, onClear, algo, onSelectImage }) {
                     <h3 className="text-xl font-bold text-gray-800 flex items-center gap-3">
                         {isTBIR ? '📋' : '🖼️'} {algo.name} Pool
                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-600 text-[10px] font-black uppercase tracking-widest border border-blue-200">
-                            {images.length} Images Indexed
+                            {images.length} Image{images.length !== 1 ? 's' : ''} Indexed
+                        </span>
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-500/10 text-green-600 text-[10px] font-black uppercase tracking-widest border border-green-200">
+                            ☁️ Cloud Persistent
                         </span>
                     </h3>
                     <p className="text-sm text-gray-500">The "knowledge base" your {algo.name} algorithm is searching through.</p>
@@ -1216,7 +1219,7 @@ const HomePage = () => {
                             <p className="font-bold text-gray-700 mb-4">
                                 Results
                                 <span className="ml-2 text-sm font-normal text-gray-400">
-                                    — {searchResults.results.length} images ranked by {algo.name} similarity
+                                    — {searchResults.results.length} image{searchResults.results.length !== 1 ? 's' : ''} ranked by {algo.name} similarity
                                 </span>
                             </p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
