@@ -1254,7 +1254,7 @@ const HomePage = () => {
                         <div className="h-px w-8 bg-gray-200"></div>
                     </div>
                     <p className="text-lg font-black text-gray-900 mb-2">
-                        by: <span className="text-violet-600">Mohamed Jbeli, Mohamed Aziz Mannai, Maram Ben Amara, Khawla Balti, Nour Saidani</span>
+                        Ce travail a été réalisé par : <span className="text-violet-600">Mohamed Jbeli, Mohamed Aziz Mannai, Maram Ben Amara, Khawla Balti et Nour Saidani</span>
                     </p>
                     <p className="mt-1 text-[10px] text-gray-300 uppercase font-bold tracking-widest">
                         Academic Visual Search Systems © 2026
