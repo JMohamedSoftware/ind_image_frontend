@@ -1079,7 +1079,7 @@ const HomePage = () => {
                                 </label>
                                 <input
                                     type="text"
-                                    placeholder="Enter keywords manually (e.g. cat, white, sofa)..."
+                                    placeholder="Enter keywords separated by commas (e.g. cat, white, sofa)..."
                                     className="w-full px-5 py-4 bg-white rounded-xl border-2 border-amber-100 text-lg font-bold focus:outline-none focus:border-amber-400 placeholder:text-amber-200 shadow-inner"
                                     value={indexDescription}
                                     onChange={(e) => setIndexDescription(e.target.value)}
@@ -1147,7 +1147,7 @@ const HomePage = () => {
                                                 value={textQuery}
                                                 onChange={e => setTextQuery(e.target.value)}
                                                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                                                placeholder={algo.type === 'TBIR' ? "Enter a keyword..." : "A sunset over the mountains..."}
+                                                placeholder={algo.type === 'TBIR' ? "Search by keywords (e.g. car, red)..." : "A sunset over the mountains..."}
                                                 className="w-full text-xl font-black bg-transparent outline-none border-b-4 pb-3 transition-all placeholder:text-gray-200"
                                                 style={{ borderColor: textQuery ? algo.accent : '#f3f4f6' }}
                                             />
