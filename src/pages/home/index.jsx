@@ -723,12 +723,18 @@ const HomePage = () => {
             fetch(`${API_BASE}/`).catch(() => { });
         }, 10 * 60 * 1000);
 
-        return () => clearInterval(keepalive);
-
         // Update current algorithm if it doesn't match the new type
         if (algo.type !== activeType.id) {
             setAlgo(ALGORITHMS.find(a => a.type === activeType.id));
         }
+
+        // Clear inputs and results when switching types for a clean state
+        setTextQuery('');
+        setIndexDescription('');
+        setSearchResults(null);
+        setSearchError(null);
+
+        return () => clearInterval(keepalive);
     }, [activeType]);
 
     const handleClearIndex = async () => {
@@ -1041,18 +1047,18 @@ const HomePage = () => {
                         {algo.type === 'TBIR' ? (
                             <div className="mb-6 bg-amber-50 rounded-2xl p-6 border-2 border-amber-200 shadow-sm transition-all animate-in slide-in-from-top duration-500">
                                 <label className="block text-xs font-black text-amber-600 mb-2 uppercase tracking-[0.2em] text-left">
-                                    Step 4: Représentation des caractéristiques (Mots-clés)
+                                    Step 4: Feature Representation (Keywords)
                                 </label>
                                 <input
                                     type="text"
-                                    placeholder="Entrez les mots-clés manuellement (ex: chat, blanc, canapé)..."
+                                    placeholder="Enter keywords manually (e.g. cat, white, sofa)..."
                                     className="w-full px-5 py-4 bg-white rounded-xl border-2 border-amber-100 text-lg font-bold focus:outline-none focus:border-amber-400 placeholder:text-amber-200 shadow-inner"
                                     value={indexDescription}
                                     onChange={(e) => setIndexDescription(e.target.value)}
                                     onClick={(e) => e.stopPropagation()}
                                 />
                                 <p className="mt-2 text-[10px] text-amber-500 text-left italic">
-                                    En mode TBIR, vous devez associer du texte manuellement car l'algorithme ne regarde pas le contenu visuel.
+                                    In TBIR mode, you must associate text manually as the algorithm does not look at visual content.
                                 </p>
                             </div>
                         ) : (
@@ -1113,7 +1119,7 @@ const HomePage = () => {
                                                 value={textQuery}
                                                 onChange={e => setTextQuery(e.target.value)}
                                                 onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                                                placeholder={algo.type === 'TBIR' ? "Saisir une kelma..." : "A sunset over the mountains..."}
+                                                placeholder={algo.type === 'TBIR' ? "Enter a keyword..." : "A sunset over the mountains..."}
                                                 className="w-full text-xl font-black bg-transparent outline-none border-b-4 pb-3 transition-all placeholder:text-gray-200"
                                                 style={{ borderColor: textQuery ? algo.accent : '#f3f4f6' }}
                                             />
@@ -1250,8 +1256,8 @@ const HomePage = () => {
 function DetailedComparison({ queryImage, selectedResult, onClose }) {
     if (!selectedResult) return null;
 
-    const queryColors = queryImage?.color_stats || { r: 33, g: 33, b: 33 };
-    const targetColors = selectedResult.color_stats || { r: 33, g: 33, b: 33 };
+    const queryColors = queryImage?.color_stats || (queryImage?.file ? { r: 33, g: 33, b: 33 } : null);
+    const targetColors = selectedResult.color_stats || null;
 
     return (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-gray-900/90 backdrop-blur-lg animate-in fade-in duration-300">
