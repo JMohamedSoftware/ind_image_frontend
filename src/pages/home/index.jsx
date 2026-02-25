@@ -858,8 +858,17 @@ const HomePage = () => {
                 // If we also have a file in a text-based search (like CLIP multimodal), append it
                 if (searchFile) form.append('file', searchFile);
 
-                const res = await fetch(endpoint, { method: 'POST', body: form });
-                if (!res.ok) throw new Error(`Server error: ${res.status}`);
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout for search
+
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    body: form,
+                    signal: controller.signal
+                });
+                clearTimeout(timeout);
+
+                if (!res.ok) throw new Error(`Backend Error ${res.status}: ${res.statusText}`);
                 const data = await res.json();
 
                 upd(2, 'done', algo.type === 'TBIR' ? 'Match found in Inverted Index.' : 'Found semantic matches in image database.');
@@ -893,8 +902,17 @@ const HomePage = () => {
                 upd(2, 'done', algo.descriptorDetail);
                 upd(3, 'running');
 
-                const res = await fetch(`${API_BASE}/api/search`, { method: 'POST', body: form });
-                if (!res.ok) throw new Error(`Server error: ${res.status}`);
+                const controller = new AbortController();
+                const timeout = setTimeout(() => controller.abort(), 60000); // 60s timeout for search
+
+                const res = await fetch(`${API_BASE}/api/search`, {
+                    method: 'POST',
+                    body: form,
+                    signal: controller.signal
+                });
+                clearTimeout(timeout);
+
+                if (!res.ok) throw new Error(`Backend Error ${res.status}: ${res.statusText}`);
                 const data = await res.json();
 
                 const matchSummary = data.results?.length > 0
@@ -912,9 +930,16 @@ const HomePage = () => {
             }
             setIsSearching(false);
         } catch (err) {
-            setSearchError(err.message);
+            let errorMsg = err.message;
+            if (err.name === 'AbortError') errorMsg = "Search timed out (over 60s). Render might be overloaded.";
+            else if (err.message === 'Failed to fetch') {
+                errorMsg = "Network Error: 'Failed to fetch'. This usually means the server is down or blocked by Mixed Content (Check if API_BASE starts with https://).";
+            }
+
+            console.error("Search Fetch Error Details:", err);
+            setSearchError(errorMsg);
             setIsSearching(false);
-            setSearchLogSteps(prev => prev.map(s => s.status === 'running' ? { ...s, status: 'error', detail: err.message } : s));
+            setSearchLogSteps(prev => prev.map(s => s.status === 'running' ? { ...s, status: 'error', detail: errorMsg } : s));
         }
     }, [queryImage, algo, indexedImages.length, textQuery]);
 
