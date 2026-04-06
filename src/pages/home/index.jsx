@@ -681,6 +681,10 @@ const HomePage = () => {
     const searchInputRef = useRef(null);
     const [selectedLibraryImage, setSelectedLibraryImage] = useState(null);
     const [serverWaking, setServerWaking] = useState(false);
+    const navigate = React.useMemo(() => {
+        // Simple mock navigate if needed, but we should use useNavigate from react-router-dom
+        return (path) => window.location.href = path;
+    }, []);
 
 
     // Fetch index on mount and when algorithm changes
