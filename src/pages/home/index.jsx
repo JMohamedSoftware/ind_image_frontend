@@ -431,6 +431,18 @@ function ResultCard({ result, rank, onSelect }) {
                     </p>
                 )}
 
+                {result.cnn_label && (
+                    <div className="mb-4 p-2 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-between">
+                         <div className="flex flex-col">
+                            <span className="text-[7px] font-black text-emerald-600 uppercase tracking-widest">AI Recognition</span>
+                            <span className="text-[10px] font-black text-emerald-800 italic uppercase">{result.cnn_label}</span>
+                         </div>
+                         <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                            <span className="text-[10px] text-white">✓</span>
+                         </div>
+                    </div>
+                )}
+
                 <div className="flex items-center justify-between pt-2 border-t border-gray-50">
                     <span className="text-[10px] text-gray-400">{result.matchesCount > 0 ? `${result.matchesCount} matches` : 'Vector Similarity'}</span>
                     <div className="flex items-center gap-2">
@@ -645,6 +657,11 @@ function IndexGallery({ images, totalImages, onClear, algo, onSelectImage }) {
                                 className="group relative bg-white p-2 rounded-2xl border border-gray-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all cursor-pointer"
                             >
                                 <img src={img.url || img.preview} alt={img.name} className="w-full aspect-square object-cover rounded-xl border mb-2" />
+                                {img.cnn_label && (
+                                    <div className="absolute top-4 left-4 px-2 py-1 bg-emerald-600 text-white text-[8px] font-black rounded-lg shadow-lg uppercase tracking-tighter z-10">
+                                        {img.cnn_label}
+                                    </div>
+                                )}
                                 <div className="px-1">
                                     <p className="text-[10px] font-bold text-gray-400 truncate uppercase tracking-tighter">{img.name}</p>
                                     <div className="flex items-center justify-between mt-1">
