@@ -1318,11 +1318,59 @@ const HomePage = () => {
 
                     {/* Results */}
                     {searchResults?.results?.length > 0 && (
-                        <div className="mt-8">
-                            <p className="font-bold text-gray-700 mb-4">
-                                Results
-                                <span className="ml-2 text-sm font-normal text-gray-400">
-                                    — {searchResults.results.length} image{searchResults.results.length !== 1 ? 's' : ''} ranked by {algo.name} similarity
+                        <div className="mt-8 animate-in fade-in slide-in-from-bottom duration-700">
+                            {/* ── AI Identification Banner ───────────────── */}
+                            {(algo.id === 'CNN' || algo.id === 'CLIP') && searchResults.results[0]?.cnn_label && (
+                                <div className="mb-8 p-1 rounded-[2rem] bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 shadow-xl overflow-hidden group">
+                                    <div className="bg-white/95 rounded-[1.9rem] p-6 flex flex-col md:flex-row items-center justify-between gap-6 relative">
+                                        <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/5 rounded-full -mr-10 -mt-10 blur-3xl" />
+                                        
+                                        <div className="flex items-center gap-6 z-10">
+                                            <div className="w-20 h-20 bg-indigo-600 rounded-3xl flex items-center justify-center text-3xl shadow-2xl shadow-indigo-200 animate-pulse">
+                                                🧠
+                                            </div>
+                                            <div>
+                                                <div className="flex items-center gap-2 mb-1">
+                                                    <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] font-black rounded border border-indigo-200 uppercase tracking-widest">
+                                                        Deep Learning Result
+                                                    </span>
+                                                    <div className="flex gap-1">
+                                                        <div className="w-1 h-1 bg-green-500 rounded-full animate-ping" />
+                                                        <div className="w-1 h-1 bg-green-500 rounded-full" />
+                                                    </div>
+                                                </div>
+                                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">AI Identification:</h3>
+                                                <p className="text-4xl font-black text-gray-900 tracking-tighter leading-none italic uppercase">
+                                                    {searchResults.results[0].cnn_label}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex flex-col items-center md:items-end gap-2 text-center md:text-right z-10 pr-4">
+                                            <div className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Confidence Score</div>
+                                            <div className="text-3xl font-black text-indigo-600">
+                                                {searchResults.results[0].similarityScore}% 
+                                            </div>
+                                            <div className="w-32 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                                <div 
+                                                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all duration-1000" 
+                                                    style={{ width: `${searchResults.results[0].similarityScore}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            <p className="font-bold text-gray-700 mb-4 flex items-center justify-between">
+                                <span>
+                                    Results
+                                    <span className="ml-2 text-sm font-normal text-gray-400">
+                                        — {searchResults.results.length} image{searchResults.results.length !== 1 ? 's' : ''} ranked by {algo.name} similarity
+                                    </span>
+                                </span>
+                                <span className="text-[10px] font-black text-violet-500 bg-violet-50 px-3 py-1 rounded-full border border-violet-100 uppercase tracking-widest">
+                                    Numerical Rank View
                                 </span>
                             </p>
                             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
