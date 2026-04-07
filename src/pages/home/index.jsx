@@ -109,6 +109,7 @@ const ALGORITHMS = [
         detectorDetail: 'Supervised Learning — requires pre-extracted numerical data (SIFT/HOG) and labels for training',
         descriptorDetail: 'Mathematical space mapping — places data points such that a separation boundary can be drawn',
         matchDetail: 'Checks which side of the hyperplane a new feature vector falls on.',
+        backbone: 'SIFT / HOG',
     },
     {
         id: 'K-MEANS',
@@ -129,6 +130,7 @@ const ALGORITHMS = [
         detectorDetail: 'Fitting Phase — feeds thousands of vectors without labels to find natural groupings',
         descriptorDetail: 'K Centroids — centers of clusters that images are assigned to based on closest distance',
         matchDetail: 'Assigns new images to the closest pre-defined cluster for fast retrieval.',
+        backbone: 'Deep Features',
     },
     {
         id: 'PCA',
@@ -149,6 +151,7 @@ const ALGORITHMS = [
         detectorDetail: 'Identifying Principal Components — axes where data varies the most to determine importance',
         descriptorDetail: 'Data Compressor — projects heavy vectors into a lower-dimensional space to speed up search',
         matchDetail: 'Matches compressed features to reduce system load and increase search speed.',
+        backbone: 'Deep Features',
     },
     {
         id: 'MEANSHIFT',
@@ -169,6 +172,26 @@ const ALGORITHMS = [
         detectorDetail: 'Sliding Window — places a window over pixels to calculate mean color/intensity',
         descriptorDetail: 'Convergence — repeats window shifts until movement stops, smoothing textures into groups',
         matchDetail: 'Smooths out patterns to isolate the primary subjects within an image.',
+    },
+    {
+        id: 'CLIP',
+        type: 'DL',
+        name: 'CLIP',
+        full: 'Contrastive Language-Image Pretraining',
+        accent: '#6366f1',
+        light: '#eef2ff',
+        border: '#c7d2fe',
+        text: '#4338ca',
+        badge: 'Semantic Bridge',
+        description: 'Advanced AI that connects images to text in a shared mathematical space. It "reads" the names and concepts of photos without training.',
+        speed: 3,
+        accuracy: 5,
+        descriptorSize: '512 floats',
+        descriptorType: 'Semantic Embedding',
+        matchMetric: 'Cosine Similarity',
+        detectorDetail: 'Neural Vision — uses a Transformer-based encoder to understand naming and context',
+        descriptorDetail: 'Latent Space — a 512-dimensional vector where "Dog" the word is near "Dog" the image',
+        matchDetail: 'Matches the concept of your search (e.g. "Beach") directly to related images.',
     },
 ];
 
@@ -324,11 +347,19 @@ function IndexedCard({ image, algo, onComplete }) {
         const t0 = setTimeout(() => { update(0, 'done', `Received: ${image.name}`); update(1, 'running'); }, 400);
         const t1 = setTimeout(() => { update(1, 'done', 'Resized & Normalisé'); update(2, 'running'); }, 1200);
         const t2 = setTimeout(() => {
-            update(2, 'done', `${algo.name} Analysis`);
+            const detail = algo.backbone ? `Backbone (${algo.backbone}) + ${algo.name}` : `${algo.name} Analysis`;
+            update(2, 'done', detail);
             update(3, 'running');
         }, 2000);
         const t3 = setTimeout(() => {
-            const feat = algo.type === 'TBIR' ? `Tags: ${image.description || 'none'}` : `Vector: ${algo.descriptorSize}`;
+            let feat = '';
+            if (algo.type === 'TBIR') {
+                feat = `Keywords: ${image.description || 'none'}`;
+            } else if (['CNN', 'SVM'].includes(algo.id)) {
+                feat = `Supervised Label: ${image.description || 'Raw Features'}`;
+            } else {
+                feat = `${algo.name} Vector: ${algo.descriptorSize}`;
+            }
             update(3, 'done', feat);
             update(4, 'running');
         }, 3000);
@@ -1090,7 +1121,10 @@ const HomePage = () => {
                                     style={{ borderColor: sel ? a.accent : '#e5e7eb', background: sel ? a.light : 'white', boxShadow: sel ? `0 0 0 3px ${a.accent}20` : undefined }}>
                                     <div className="flex items-center justify-between mb-2">
                                         <span className="text-xl font-black" style={{ color: a.accent }}>{a.name}</span>
-                                        {sel && <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ background: a.accent }}>✓ Active</span>}
+                                        <div className="flex gap-1.5">
+                                            {a.backbone && <span className="text-[9px] font-black px-2 py-0.5 rounded-md bg-amber-100 text-amber-700 border border-amber-200">🛠️ {a.backbone}</span>}
+                                            {sel && <span className="text-xs font-bold px-2 py-0.5 rounded-full text-white" style={{ background: a.accent }}>✓ Active</span>}
+                                        </div>
                                     </div>
                                     <p className="text-xs text-gray-400 mb-2">{a.full}</p>
                                     <p className="text-xs text-gray-600 mb-4 leading-relaxed">{a.description}</p>
@@ -1139,21 +1173,23 @@ const HomePage = () => {
                     >
                         <input ref={indexInputRef} type="file" accept="image/*" multiple className="hidden" onChange={handleIndexFiles} />
 
-                        {algo.type === 'TBIR' ? (
-                            <div className="mb-6 bg-amber-50 rounded-2xl p-6 border-2 border-amber-200 shadow-sm transition-all animate-in slide-in-from-top duration-500">
-                                <label className="block text-xs font-black text-amber-600 mb-2 uppercase tracking-[0.2em] text-left">
-                                    Step 4: Feature Representation (Keywords)
+                        {(algo.type === 'TBIR' || ['CNN', 'SVM'].includes(algo.id)) ? (
+                            <div className={`mb-6 rounded-2xl p-6 border-2 shadow-sm transition-all animate-in slide-in-from-top duration-500 ${algo.type === 'TBIR' ? 'bg-amber-50 border-amber-200' : 'bg-indigo-50 border-indigo-200'}`}>
+                                <label className={`block text-xs font-black mb-2 uppercase tracking-[0.2em] text-left ${algo.type === 'TBIR' ? 'text-amber-600' : 'text-indigo-600'}`}>
+                                    {algo.type === 'TBIR' ? 'Step 4: Feature Representation (Keywords)' : 'Step 4: Supervised Learning (Classification Label)'}
                                 </label>
                                 <input
                                     type="text"
-                                    placeholder="Enter keywords separated by commas (e.g. cat, white, sofa)..."
-                                    className="w-full px-5 py-4 bg-white rounded-xl border-2 border-amber-100 text-lg font-bold focus:outline-none focus:border-amber-400 placeholder:text-amber-200 shadow-inner"
+                                    placeholder={algo.type === 'TBIR' ? "Enter keywords separated by commas (e.g. cat, white, sofa)..." : "Enter label (e.g. Car, Dog, Flower)..."}
+                                    className={`w-full px-5 py-4 bg-white rounded-xl border-2 text-lg font-bold focus:outline-none placeholder:opacity-30 shadow-inner ${algo.type === 'TBIR' ? 'border-amber-100 focus:border-amber-400' : 'border-indigo-100 focus:border-indigo-400'}`}
                                     value={indexDescription}
                                     onChange={(e) => setIndexDescription(e.target.value)}
                                     onClick={(e) => e.stopPropagation()}
                                 />
-                                <p className="mt-2 text-[10px] text-amber-500 text-left italic">
-                                    In TBIR mode, you must associate text manually as the algorithm does not look at visual content.
+                                <p className={`mt-2 text-[10px] text-left italic ${algo.type === 'TBIR' ? 'text-amber-500' : 'text-indigo-500'}`}>
+                                    {algo.type === 'TBIR' 
+                                        ? "In TBIR mode, you must associate text manually as the algorithm does not look at visual content." 
+                                        : "In Supervised mode, the label helps map visual features to a specific semantic class."}
                                 </p>
                             </div>
                         ) : (
@@ -1412,6 +1448,28 @@ function DetailedComparison({ queryImage, selectedResult, onClose }) {
                                         </div>
                                     </div>
                                 </div>
+                            ) : (searchResults.results[0]?.cnn_label && (selectedResult.algorithm === 'CNN' || selectedResult.algorithm === 'CLIP')) ? (
+                                <div className="p-5 bg-indigo-600 rounded-2xl shadow-xl border border-indigo-400 animate-in zoom-in duration-500 relative overflow-hidden group">
+                                    <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-white/20 transition-all"></div>
+                                    <div className="relative z-10">
+                                        <div className="flex items-center gap-3 mb-2">
+                                            <span className="px-2 py-1 bg-white/20 backdrop-blur-md text-[9px] font-black text-white rounded-lg border border-white/30 uppercase tracking-[0.2em]">
+                                                System Intelligence
+                                            </span>
+                                            <div className="flex gap-1">
+                                              <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse"></div>
+                                              <div className="w-1.5 h-1.5 bg-green-400 rounded-full animate-pulse delay-75"></div>
+                                            </div>
+                                        </div>
+                                        <h5 className="text-[10px] font-bold text-indigo-100 uppercase tracking-widest mb-1">Detected Semantic Class:</h5>
+                                        <p className="text-3xl font-black text-white tracking-tight">
+                                            {searchResults.results[0].cnn_label}
+                                        </p>
+                                        <p className="text-[10px] text-indigo-200 mt-2 italic font-medium">
+                                            "The {selectedResult.algorithm} brain identifies this {selectedResult.algorithm === 'CLIP' ? 'concept' : 'object'} with high mathematical confidence."
+                                        </p>
+                                    </div>
+                                </div>
                             ) : selectedResult.type === 'TBIR' ? (
                                 <div className="p-4 bg-gray-50 rounded-xl border border-dashed border-gray-200">
                                     <p className="text-xs text-gray-500 italic">
@@ -1452,13 +1510,20 @@ function DetailedComparison({ queryImage, selectedResult, onClose }) {
 
                 {/* Right: Technical Breakdown */}
                 <div className="w-full md:w-1/2 p-8 overflow-y-auto">
-                    <div className="flex justify-between items-start mb-8">
-                        <div>
-                            <h2 className="text-3xl font-black text-gray-900 mb-1">Match Analysis</h2>
-                            <p className="text-sm text-gray-500">Method: <span className="font-bold text-violet-600">{selectedResult.algorithm}</span></p>
+                        <div className="flex justify-between items-start mb-8">
+                            <div>
+                                <h2 className="text-3xl font-black text-gray-900 mb-1">Match Analysis</h2>
+                                <p className="text-sm text-gray-500 flex items-center gap-2">
+                                    Method: <span className="font-bold text-violet-600">{selectedResult.algorithm}</span>
+                                    {ALGORITHMS.find(x => x.id === selectedResult.algorithm)?.backbone && (
+                                        <span className="px-2 py-0.5 bg-amber-50 border border-amber-200 rounded text-[10px] font-bold text-amber-600 flex items-center gap-1">
+                                            🛠️ Backbone: {ALGORITHMS.find(x => x.id === selectedResult.algorithm).backbone}
+                                        </span>
+                                    )}
+                                </p>
+                            </div>
+                            <button onClick={onClose} className="p-2 bg-gray-100 text-gray-400 rounded-full hover:bg-gray-200 transition-colors">✕</button>
                         </div>
-                        <button onClick={onClose} className="p-2 bg-gray-100 text-gray-400 rounded-full hover:bg-gray-200 transition-colors">✕</button>
-                    </div>
 
                     <div className="space-y-8">
                         {/* Score Gauge */}

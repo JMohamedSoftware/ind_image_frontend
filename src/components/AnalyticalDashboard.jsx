@@ -88,6 +88,14 @@ const AnalyticalDashboard = ({ imageId, onClose }) => {
                    <Activity className="animate-spin text-indigo-500" size={48} />
                    <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400">Crunching Numerical Data...</span>
                 </div>
+             ) : data?.error || !data?.raw_vector ? (
+                <div className="h-full flex flex-col items-center justify-center gap-4 text-center p-12">
+                   <Info className="text-amber-500" size={48} />
+                   <h3 className="text-xl font-black text-white uppercase italic">Analysis Unavailable</h3>
+                   <p className="text-sm text-slate-500 max-w-sm">
+                      {data?.error || "We couldn't retrieve the mathematical vector for this image. It might have been indexed before the current architecture update."}
+                   </p>
+                </div>
              ) : (
                 <div className="space-y-8 animate-in slide-in-from-right duration-500">
                    
@@ -99,10 +107,10 @@ const AnalyticalDashboard = ({ imageId, onClose }) => {
                            <span className="text-[8px] bg-indigo-600/20 text-indigo-400 px-2 py-1 rounded border border-indigo-500/20 font-black">STRICT NUMERICAL MODE</span>
                         </div>
                         <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-1 overflow-hidden rounded-xl border border-white/5 shadow-2xl">
-                           {data?.raw_vector.map((val, i) => (
+                           {(data?.raw_vector || []).map((val, i) => (
                              <div key={i} className="bg-slate-900 border border-white/5 p-3 text-center transition-colors hover:bg-indigo-900/40 group">
                                 <span className="text-[9px] font-black font-mono text-indigo-300 transition-transform group-hover:scale-110 block">
-                                   {val.toFixed(4)}
+                                   {typeof val === 'number' ? val.toFixed(4) : '0.0000'}
                                 </span>
                                 <span className="text-[6px] text-slate-700 block mt-1">Idx: {i}</span>
                              </div>
@@ -122,17 +130,21 @@ const AnalyticalDashboard = ({ imageId, onClose }) => {
                      <div className="space-y-8 h-full flex flex-col">
                         <h3 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-500">Statistical Feature Distribution</h3>
                         <div className="h-[350px] w-full bg-black/40 rounded-3xl border border-white/5 p-12 flex items-end justify-between items-stretch gap-2">
-                           {data?.distribution.map((d, i) => (
-                             <div key={i} className="flex-1 flex flex-col justify-end items-center group relative">
-                                <div 
-                                  className="w-full bg-indigo-600/40 hover:bg-indigo-500 rounded-t-lg transition-all duration-500 group-hover:shadow-[0_0_20px_rgba(79,70,229,0.4)]"
-                                  style={{ height: `${(d.count / Math.max(...data.distribution.map(x => x.count))) * 100}%` }}
-                                />
-                                <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-indigo-600 text-[8px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
-                                   Bin: {d.bin}
-                                </div>
-                             </div>
-                           ))}
+                           {Array.isArray(data?.distribution) && data.distribution.length > 0 ? (
+                             data.distribution.map((d, i) => (
+                               <div key={i} className="flex-1 flex flex-col justify-end items-center group relative">
+                                  <div 
+                                    className="w-full bg-indigo-600/40 hover:bg-indigo-500 rounded-t-lg transition-all duration-500 group-hover:shadow-[0_0_20px_rgba(79,70,229,0.4)]"
+                                    style={{ height: `${(d.count / Math.max(...data.distribution.map(x => x.count || 0), 1)) * 100}%` }}
+                                  />
+                                  <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-indigo-600 text-[8px] font-bold px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-50">
+                                     Bin: {d.bin}
+                                  </div>
+                               </div>
+                             ))
+                           ) : (
+                             <div className="flex-1 flex items-center justify-center text-[10px] text-slate-500 font-bold uppercase">No distribution data available</div>
+                           )}
                         </div>
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
                            <div className="bg-white/[0.02] border border-white/5 p-4 rounded-2xl text-center">
