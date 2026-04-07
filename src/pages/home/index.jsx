@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import AnalyticalDashboard from '../../components/AnalyticalDashboard';
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
@@ -715,10 +716,7 @@ const HomePage = () => {
     const searchInputRef = useRef(null);
     const [selectedLibraryImage, setSelectedLibraryImage] = useState(null);
     const [serverWaking, setServerWaking] = useState(false);
-    const navigate = React.useMemo(() => {
-        // Simple mock navigate if needed, but we should use useNavigate from react-router-dom
-        return (path) => window.location.href = path;
-    }, []);
+    const navigate = useNavigate();
 
 
     // Fetch index on mount and when algorithm changes
