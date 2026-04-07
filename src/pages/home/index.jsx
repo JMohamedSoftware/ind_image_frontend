@@ -425,22 +425,17 @@ function ResultCard({ result, rank, onSelect }) {
                     </div>
                 )}
 
-                {result.description && (
+                {result.cnn_label ? (
+                    <div className="mb-4">
+                        <p className="text-[7px] font-black text-emerald-600 uppercase tracking-widest mb-1">AI Identified Object</p>
+                        <p className="text-sm font-black text-emerald-800 italic uppercase bg-emerald-50 p-2 rounded-lg border border-emerald-100">
+                             {result.cnn_label}
+                        </p>
+                    </div>
+                ) : result.description && (
                     <p className="mb-3 text-[9px] text-gray-800 font-bold italic line-clamp-2 bg-slate-50 p-2 rounded-lg border border-slate-100">
                         "{result.description}"
                     </p>
-                )}
-
-                {result.cnn_label && (
-                    <div className="mb-4 p-2 bg-emerald-50 border border-emerald-100 rounded-xl flex items-center justify-between">
-                         <div className="flex flex-col">
-                            <span className="text-[7px] font-black text-emerald-600 uppercase tracking-widest">AI Recognition</span>
-                            <span className="text-[10px] font-black text-emerald-800 italic uppercase">{result.cnn_label}</span>
-                         </div>
-                         <div className="w-5 h-5 bg-emerald-500 rounded-full flex items-center justify-center shadow-lg">
-                            <span className="text-[10px] text-white">✓</span>
-                         </div>
-                    </div>
                 )}
 
                 <div className="flex items-center justify-between pt-2 border-t border-gray-50">
@@ -1035,6 +1030,15 @@ const HomePage = () => {
                             <span className="text-xs font-bold uppercase tracking-widest">{t.name}</span>
                         </button>
                     ))}
+                    
+                    {/* EMERGENCY: Redirect to the Tayara Pro Max Lab for Presentation Mode */}
+                    <button
+                        onClick={() => window.location.href = '/lab'}
+                        className="flex-1 py-4 flex flex-col items-center gap-1 transition-all border-b-2 border-transparent bg-indigo-600 text-white hover:bg-indigo-700"
+                    >
+                        <span className="text-xl">🚀</span>
+                        <span className="text-[10px] font-black uppercase tracking-widest">Open AI Lab</span>
+                    </button>
                 </div>
             </div>
 

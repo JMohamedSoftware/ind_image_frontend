@@ -10,6 +10,8 @@ import {
   Share2
 } from 'lucide-react';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8007";
+
 const AnalyticalDashboard = ({ imageId, onClose }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -18,7 +20,7 @@ const AnalyticalDashboard = ({ imageId, onClose }) => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await fetch(`http://localhost:8007/api/analysis/${imageId}`);
+        const response = await fetch(`${API_BASE}/api/analysis/${imageId}`);
         const result = await response.json();
         setData(result);
       } catch (err) {
