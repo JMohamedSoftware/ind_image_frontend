@@ -4,23 +4,25 @@ import {
   Cpu, 
   Layers, 
   Maximize, 
-  Minimize, 
-  Play, 
-  RefreshCw, 
-  Activity, 
   Target, 
   Database,
-  BarChart2,
-  Share2,
-  Trash2,
+  Activity, 
+  Play, 
+  RefreshCw, 
   Search,
   Upload,
   Info,
   CheckCircle,
-  AlertTriangle
+  AlertTriangle,
+  Code,
+  Terminal,
+  Eye,
+  Settings,
+  TrendingDown,
+  BarChart
 } from 'lucide-react';
 
-const API_BASE = 'http://localhost:8007'; // Match backend port
+const API_BASE = 'http://localhost:8007';
 
 const PresentationLab = () => {
   const [activeTab, setActiveTab] = useState('cnn');
@@ -28,12 +30,11 @@ const PresentationLab = () => {
   const [error, setError] = useState(null);
   const [file, setFile] = useState(null);
   const [preview, setPreview] = useState(null);
+  const [mode, setMode] = useState('inference'); // 'training' or 'inference'
 
   // Lab Data states
-  const [siftData, setSiftData] = useState(null);
-  const [hogData, setHogData] = useState(null);
-  const [segmentedImage, setSegmentedImage] = useState(null);
-  const [trainHistory, setTrainHistory] = useState(null);
+  const [analysis, setAnalysis] = useState(null);
+  const [trainHistory, setTrainHistory] = useState([]);
   const [pcaPoints, setPcaPoints] = useState([]);
   const [currentEpoch, setCurrentEpoch] = useState(0);
 
@@ -50,7 +51,7 @@ const PresentationLab = () => {
 
   const processImage = async (imgFile) => {
     setLoading(true);
-    setError(null);
+    setAnalysis(null);
     const formData = new FormData();
     formData.append('file', imgFile);
 
@@ -60,28 +61,27 @@ const PresentationLab = () => {
         body: formData,
       });
       const data = await response.json();
-      setSiftData(data.sift_keypoints);
-      setHogData(data.hog_orientations);
-      setSegmentedImage(data.segmented_image);
+      setAnalysis(data.analysis);
     } catch (err) {
-      setError('Failed to process image. Make sure backend is running.');
+      setError('Failed to reach backend analysis engine.');
     } finally {
       setLoading(false);
     }
   };
 
-  const simulateTraining = async (algo) => {
+  const runTraining = async (algo) => {
     setLoading(true);
     setCurrentEpoch(0);
+    setTrainHistory([]);
     try {
       const response = await fetch(`${API_BASE}/api/lab/train/simulate?algorithm=${algo}`);
       const data = await response.json();
       
-      // Animate the training steps
-      for (let i = 0; i <= data.history.length; i++) {
-        await new Promise(r => setTimeout(r, 150));
-        setCurrentEpoch(i);
-        setTrainHistory(data.history.slice(0, i));
+      // Educational simulation speed
+      for (let i = 0; i < data.history.length; i++) {
+        await new Promise(r => setTimeout(r, 200));
+        setCurrentEpoch(i + 1);
+        setTrainHistory(prev => [...prev, data.history[i]]);
       }
     } catch (err) {
       setError('Training simulation failed.');
@@ -95,9 +95,7 @@ const PresentationLab = () => {
       const response = await fetch(`${API_BASE}/api/lab/pca/projection`);
       const data = await response.json();
       setPcaPoints(data.points || []);
-    } catch (err) {
-      setError('PCA projection failed.');
-    }
+    } catch (err) { }
   };
 
   useEffect(() => {
@@ -105,414 +103,466 @@ const PresentationLab = () => {
   }, [activeTab]);
 
   return (
-    <div className="min-h-screen bg-[#0a0a0c] text-slate-100 font-sans p-6 md:p-12 overflow-x-hidden">
-      {/* Header */}
-      <header className="max-w-7xl mx-auto mb-12 flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-2 text-indigo-400 mb-2">
-            <Zap size={20} className="fill-indigo-400" />
-            <span className="uppercase tracking-widest text-sm font-bold">Research & Presentation</span>
+    <div className="min-h-screen bg-[#050507] text-[#e2e8f0] font-mono selection:bg-indigo-500/30">
+      
+      {/* SCANLINE EFFECT */}
+      <div className="fixed inset-0 pointer-events-none z-50 opacity-[0.03] bg-[linear-gradient(rgba(18,16,16,0)_50%,rgba(0,0,0,0.25)_50%),linear-gradient(90deg,rgba(255,0,0,0.06),rgba(0,255,0,0.02),rgba(0,0,255,0.06))] bg-[length:100%_4px,3px_100%]" />
+
+      {/* TOP NAV */}
+      <nav className="sticky top-0 z-[60] bg-[#0a0a0f]/80 backdrop-blur-xl border-b border-white/5 px-6 py-4">
+        <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 bg-indigo-600 rounded-lg flex items-center justify-center shadow-[0_0_20px_rgba(79,70,229,0.4)]">
+              <Terminal className="text-white" size={20} />
+            </div>
+            <div>
+              <h1 className="text-xl font-black tracking-tighter uppercase italic">Visual AI Lab <span className="text-indigo-500 text-xs not-italic font-bold ml-2">v2.0 Industrial</span></h1>
+              <div className="flex items-center gap-2 text-[10px] text-slate-500 font-bold uppercase">
+                <div className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse" />
+                System Online — Presentation Mode Active
+              </div>
+            </div>
           </div>
-          <h1 className="text-4xl md:text-6xl font-extrabold tracking-tighter bg-gradient-to-r from-white to-slate-500 bg-clip-text text-transparent">
-            Visual AI Laboratory
-          </h1>
-          <p className="mt-4 text-slate-400 max-w-2xl text-lg leading-relaxed">
-            An interactive playground to explain complex computer vision algorithms. 
-            From mathematical feature extraction to deep neural learning.
-          </p>
+
+          <div className="flex bg-black/40 p-1 rounded-xl border border-white/5 shadow-inner">
+            {['cnn', 'svm', 'features', 'pca', 'kmeans', 'segmentation'].map((t) => (
+              <button
+                key={t}
+                onClick={() => setActiveTab(t)}
+                className={`px-4 py-2 rounded-lg text-[10px] font-black transition-all uppercase tracking-widest ${
+                  activeTab === t 
+                  ? 'bg-indigo-600 text-white shadow-lg' 
+                  : 'text-slate-500 hover:text-slate-300'
+                }`}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
         </div>
+      </nav>
 
-        <nav className="flex bg-[#16161a] p-1 rounded-2xl border border-slate-800/50 shadow-2xl">
-          {['cnn', 'svm', 'kmeans', 'pca', 'features', 'segmentation'].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 uppercase tracking-tighter ${
-                activeTab === tab 
-                ? 'bg-indigo-600 text-white shadow-indigo-500/20 shadow-lg' 
-                : 'text-slate-500 hover:text-slate-300'
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-        </nav>
-      </header>
-
-      <main className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* MAIN CONTENT */}
+      <main className="max-w-7xl mx-auto p-6 lg:p-12 grid grid-cols-1 lg:grid-cols-12 gap-8 relative z-10">
         
-        {/* Main Interaction Area */}
+        {/* LEFT COLUMN: VISUALIZATION */}
         <div className="lg:col-span-8 space-y-8">
           
-          {/* UPLOAD SECTION (Global for most tabs) */}
-          {(activeTab !== 'pca' && activeTab !== 'kmeans') && (
-            <div className="bg-[#111116] border border-slate-800/50 rounded-3xl p-8 relative overflow-hidden group">
-              <div className="absolute top-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[100px] pointer-events-none" />
-              
-              <div className="flex flex-col items-center justify-center border-2 border-dashed border-slate-800 rounded-2xl py-12 transition-colors hover:border-indigo-500/50 group-hover:bg-slate-900/30">
-                {preview ? (
-                  <div className="relative max-w-full max-h-[400px]">
-                    <img src={preview} alt="Upload" className="rounded-xl shadow-2xl max-h-[400px] object-contain" />
-                    
-                    {/* SIFT OVERLAY */}
-                    {activeTab === 'features' && siftData && (
-                      <div className="absolute inset-0 pointer-events-none">
-                        <svg className="w-full h-full" viewBox={`0 0 100 100`} preserveAspectRatio="none">
-                          {/* Note: This is simplified scaling logic for example purposes */}
-                        </svg>
-                        {siftData.map((kp, i) => (
-                           <div 
-                            key={i} 
-                            className="absolute bg-yellow-400/40 border border-yellow-200 rounded-full animate-pulse"
-                            style={{
-                              left: `${kp.x / 5}%`, // Assuming original was 500px, needs calibration
-                              top: `${kp.y / 5}%`,
-                              width: `${kp.size/2}px`,
-                              height: `${kp.size/2}px`,
-                            }}
-                           />
-                        ))}
-                      </div>
-                    )}
+          {/* CORE EXPLORER CARD */}
+          <div className="bg-[#0f0f13] border border-white/5 rounded-3xl overflow-hidden shadow-2xl relative">
+            {/* CARD HEADER: MODE SELECTOR */}
+            <div className="flex border-b border-white/5">
+              <button 
+                onClick={() => setMode('inference')}
+                className={`flex-1 py-4 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'inference' ? 'bg-indigo-600/10 text-indigo-400 border-b-2 border-indigo-500' : 'text-slate-500 opacity-50'}`}
+              >
+                <Eye size={14} /> Utilisation / Inference
+              </button>
+              <button 
+                onClick={() => setMode('training')}
+                className={`flex-1 py-4 flex items-center justify-center gap-2 text-[10px] font-black uppercase tracking-widest transition-all ${mode === 'training' ? 'bg-amber-600/10 text-amber-400 border-b-2 border-amber-500' : 'text-slate-500 opacity-50'}`}
+              >
+                <Settings size={14} /> Entraînement / Training
+              </button>
+            </div>
 
-                    {/* HOG OVERLAY */}
-                    {activeTab === 'features' && hogData && (
-                      <div className="absolute inset-0 grid grid-cols-[repeat(8,1fr)] grid-rows-[repeat(16,1fr)] pointer-events-none opacity-60">
-                        {hogData.flat().map((angle, i) => (
-                          <div key={i} className="flex items-center justify-center">
+            <div className="p-8">
+              {/* INFERENCE VIEW */}
+              {mode === 'inference' && (
+                <div className="space-y-8">
+                  {/* UPLOAD & ANALYSIS OVERLAY */}
+                  <div className="relative group rounded-2xl border-2 border-dashed border-white/10 p-8 hover:border-indigo-500/50 transition-all bg-black/20">
+                     {!preview ? (
+                       <label className="flex flex-col items-center justify-center py-12 cursor-pointer">
+                         <div className="w-16 h-16 bg-white/5 rounded-2xl flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                           <Upload className="text-indigo-400" />
+                         </div>
+                         <p className="text-sm font-black uppercase tracking-widest text-slate-400">Load Test Image</p>
+                         <p className="text-[10px] text-slate-600 mt-2 italic">Select image for real-time analysis</p>
+                         <input type="file" onChange={handleFileChange} className="hidden" />
+                       </label>
+                     ) : (
+                       <div className="relative max-w-2xl mx-auto flex items-center justify-center">
+                          <img src={preview} className="rounded-xl shadow-2xl max-h-[450px] object-contain" alt="Target" />
+                          
+                          {/* DYNAMIC ANALYSIS OVERLAYS */}
+                          {analysis && (
+                            <div className="absolute inset-0 pointer-events-none">
+                               {/* SIFT KEYPOINTS */}
+                               {activeTab === 'features' && analysis.sift_keypoints?.map((kp, i) => (
+                                 <div 
+                                  key={i} 
+                                  className="absolute w-1.5 h-1.5 border border-yellow-400 rounded-full bg-yellow-400/20"
+                                  style={{ left: `${kp.x/5}%`, top: `${kp.y/5}%` }} // Simplified mapping
+                                 />
+                               ))}
+
+                               {/* HOG GRADIENTS */}
+                               {activeTab === 'features' && analysis.hog_orientations?.map((row, y) => 
+                                 row.map((angle, x) => (
+                                  <div 
+                                    key={`${x}-${y}`} 
+                                    className="absolute w-4 h-4 opacity-40" 
+                                    style={{ left: `${x*6.25}%`, top: `${y*6.25}%` }}
+                                  >
+                                    <div className="w-full h-0.5 bg-indigo-400" style={{ transform: `rotate(${angle}deg)` }} />
+                                  </div>
+                                 ))
+                               )}
+
+                               {/* MEAN SHIFT SEGMENTS */}
+                               {activeTab === 'segmentation' && analysis.segmented_image && (
+                                 <img src={analysis.segmented_image} className="absolute inset-0 w-full h-full object-contain mix-blend-overlay opacity-80" alt="Segmented" />
+                               )}
+                            </div>
+                          )}
+
+                          {/* SCANNER ANIMATION */}
+                          {loading && (
+                            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+                              <div className="w-full h-1 bg-indigo-400 shadow-[0_0_20px_#818cf8] animate-scan" />
+                            </div>
+                          )}
+                       </div>
+                     )}
+
+                     {preview && (
+                        <button 
+                          onClick={() => {setPreview(null); setAnalysis(null);}}
+                          className="absolute top-4 right-4 p-2 bg-red-500/10 text-red-500 rounded-lg hover:bg-red-500/20"
+                        >
+                          <RefreshCw size={16} />
+                        </button>
+                     )}
+                  </div>
+
+                  {/* ANALYSIS RESULTS BARS */}
+                  {analysis && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in slide-in-from-bottom duration-500">
+                      {/* VECTEURS (Digital Signature) */}
+                      <div className="bg-black/40 border border-white/5 rounded-2xl p-6">
+                        <div className="flex items-center justify-between mb-4">
+                          <h4 className="text-[10px] font-black uppercase text-indigo-400 tracking-widest flex items-center gap-2">
+                            <Code size={14} /> Digital Signature (Vecteur)
+                          </h4>
+                          <span className="text-[8px] font-bold text-slate-600">32 / 128 FLOATS</span>
+                        </div>
+                        <div className="grid grid-cols-8 gap-1">
+                          {analysis.digital_signature?.map((v, i) => (
+                            <div key={i} className="bg-slate-900 border border-white/5 p-1 text-center group relative cursor-help">
+                              <span className="text-[8px] font-bold text-indigo-300">{(v*10).toFixed(0)}</span>
+                              <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 p-2 bg-indigo-600 text-white text-[8px] rounded z-20 whitespace-normal">
+                                Feature Value: {v}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                        <p className="mt-4 text-[9px] text-slate-500 italic leading-relaxed">
+                          This vector is the "Mathematical ID" extracted by {activeTab.toUpperCase()}. 
+                          The machine compares these arrays of numbers to find similarity.
+                        </p>
+                      </div>
+
+                      {/* CLASSIFICATION (CNN/IA Result) */}
+                      <div className="bg-black/40 border border-white/5 rounded-2xl p-6">
+                        <div className="flex items-center justify-between mb-6">
+                          <h4 className="text-[10px] font-black uppercase text-emerald-400 tracking-widest flex items-center gap-2">
+                            <Target size={14} /> IA Prediction (Inference)
+                          </h4>
+                        </div>
+                        
+                        <div className="space-y-4">
+                          <div className="flex items-end justify-between">
+                            <span className="text-2xl font-black text-white">{analysis.classification?.label}</span>
+                            <span className="text-emerald-400 text-xs font-black">{(analysis.classification?.confidence * 100).toFixed(0)}% MATCH</span>
+                          </div>
+                          <div className="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-white/5">
                             <div 
-                              className="w-full h-[1px] bg-indigo-400" 
-                              style={{ transform: `rotate(${angle}deg)` }}
+                              className="bg-emerald-500 h-full shadow-[0_0_10px_#10b981]" 
+                              style={{ width: `${analysis.classification?.confidence * 100}%` }} 
                             />
                           </div>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* SEGMENTATION OVERLAY */}
-                    {activeTab === 'segmentation' && segmentedImage && (
-                      <div className="absolute inset-0 rounded-xl overflow-hidden shadow-indigo-500/20 shadow-inner">
-                        <img src={segmentedImage} className="w-full h-full object-contain opacity-90 transition-opacity" />
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <label className="cursor-pointer flex flex-col items-center">
-                    <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mb-4 transform transition-transform group-hover:-translate-y-1">
-                      <Upload className="text-indigo-400" />
-                    </div>
-                    <span className="text-slate-300 font-medium">Drop educational image here</span>
-                    <span className="text-slate-500 text-xs mt-2">Works for SIFT, HOG, CNN, and Segmentation</span>
-                    <input type="file" onChange={handleFileChange} className="hidden" />
-                  </label>
-                )}
-                
-                {preview && (
-                  <button 
-                    onClick={() => {setPreview(null); setFile(null); setSiftData(null); setHogData(null); setSegmentedImage(null);}}
-                    className="absolute top-4 right-4 p-2 bg-red-500/10 text-red-400 rounded-lg hover:bg-red-500/20 transition-colors"
-                  >
-                    <Trash2 size={16} />
-                  </button>
-                )}
-              </div>
-              
-              {loading && (
-                <div className="absolute inset-0 bg-slate-950/40 backdrop-blur-sm flex items-center justify-center rounded-3xl">
-                  <div className="flex flex-col items-center gap-4">
-                    <RefreshCw className="animate-spin text-indigo-500" size={32} />
-                    <span className="text-xs font-bold uppercase tracking-widest text-indigo-400">Processing Pixels...</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* TAB CONTENT: CNN */}
-          {activeTab === 'cnn' && (
-            <div className="space-y-6">
-              <div className="bg-[#111116] border border-slate-800/50 rounded-3xl p-8">
-                <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-xl font-bold flex items-center gap-3">
-                    <Cpu className="text-indigo-500" />
-                    Neural Network Cycle (Backpropagation)
-                  </h3>
-                  <button 
-                    onClick={() => simulateTraining('CNN')}
-                    disabled={loading}
-                    className="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 px-6 py-2 rounded-xl text-sm font-bold transition-all shadow-lg active:scale-95"
-                  >
-                    <Play size={16} fill="currentColor" />
-                    START TRAINING
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                  {/* Loss Chart */}
-                  <div className="h-[200px] bg-slate-900/50 rounded-2xl p-4 relative flex items-end gap-1">
-                    {!trainHistory ? (
-                      <div className="absolute inset-0 flex items-center justify-center text-slate-600 text-xs uppercase tracking-tighter">
-                        Training metrics will appear here
-                      </div>
-                    ) : (
-                      trainHistory.map((h, i) => (
-                        <div 
-                          key={i}
-                          className="flex-1 bg-indigo-500 hover:bg-indigo-300 transition-all rounded-t-sm"
-                          style={{ height: `${h.loss * 100}%` }}
-                          title={`Epoch ${h.epoch}: Loss ${h.loss}`}
-                        />
-                      ))
-                    )}
-                    <div className="absolute top-2 left-2 text-[10px] text-slate-500 font-bold uppercase">Training Loss (Cross-Entropy)</div>
-                  </div>
-
-                  {/* Info Panel */}
-                  <div className="space-y-4">
-                    <div className="bg-slate-900/40 p-4 rounded-xl border border-white/5">
-                      <div className="text-xs text-slate-500 uppercase mb-1">Current State</div>
-                      <div className="text-2xl font-black text-indigo-400">
-                        {currentEpoch > 0 ? `Epoch ${currentEpoch}/20` : 'Idle'}
-                      </div>
-                    </div>
-                    <div className="bg-slate-900/40 p-4 rounded-xl border border-white/5">
-                      <div className="text-xs text-slate-500 uppercase mb-1">Process Action</div>
-                      <div className="text-sm font-medium">
-                        {trainHistory && trainHistory.length > 0 
-                          ? trainHistory[trainHistory.length-1].action 
-                          : 'Waiting for Forward Pass...'}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB CONTENT: PCA */}
-          {activeTab === 'pca' && (
-            <div className="bg-[#111116] border border-slate-800/50 rounded-3xl p-8">
-              <h3 className="text-xl font-bold mb-8 flex items-center gap-3">
-                <Maximize className="text-indigo-500" />
-                Dimension Reduction (Principal Component Analysis)
-              </h3>
-              
-              <div className="flex flex-col md:flex-row gap-8">
-                <div className="flex-1 aspect-square bg-slate-900/50 rounded-3xl p-8 relative border border-white/5">
-                  {/* Scatter Plot Simulation */}
-                  {pcaPoints.length === 0 ? (
-                    <div className="text-slate-600 flex flex-col items-center justify-center h-full gap-4">
-                      <Database size={40} className="opacity-20" />
-                      <p className="text-xs uppercase tracking-widest text-center">No indexed data.<br/>Please index some images first.</p>
-                    </div>
-                  ) : (
-                    <div className="relative w-full h-full">
-                      {/* Grid Lines */}
-                      <div className="absolute inset-0 grid grid-cols-4 grid-rows-4 opacity-10 pointer-events-none">
-                        {[...Array(16)].map((_, i) => <div key={i} className="border border-white" />)}
-                      </div>
-                      
-                      {pcaPoints.map((p, i) => (
-                        <div 
-                          key={i}
-                          className={`absolute w-3 h-3 rounded-full cursor-help hover:scale-150 transition-all shadow-lg ${
-                            p.category === 'DL' ? 'bg-indigo-500' : p.category === 'TBIR' ? 'bg-emerald-500' : 'bg-amber-500'
-                          }`}
-                          style={{ 
-                            left: `${50 + (p.x * 4)}%`, 
-                            top: `${50 + (p.y * 4)}%`,
-                          }}
-                          title={`${p.filename} (${p.algorithm})`}
-                        />
-                      ))}
-                      
-                      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-6 text-[10px] text-slate-500 uppercase font-black tracking-widest">
-                        Principal Component 1
-                      </div>
-                      <div className="absolute left-0 top-1/2 -rotate-90 -translate-x-14 text-[10px] text-slate-500 uppercase font-black tracking-widest">
-                        Principal Component 2
+                          
+                          <div className="pt-2 flex flex-wrap gap-2 opacity-50">
+                            {analysis.classification?.alternatives?.map((alt, i) => (
+                              <div key={i} className="text-[8px] font-bold bg-white/5 border border-white/5 px-2 py-1 rounded">
+                                {alt.label}: {(alt.score * 100).toFixed(0)}%
+                              </div>
+                            ))}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
                 </div>
+              )}
 
-                <div className="md:w-64 space-y-4">
-                  <h4 className="text-sm font-bold text-slate-300">Statistical Insight</h4>
-                  <p className="text-xs text-slate-500 leading-relaxed">
-                    PCA transforms a high-dimensional feature vector (e.g. 4096 dimensions from CNN) 
-                    into a lower-dimensional subspace while preserving the maximum variance. 
-                    This results in faster searches and clearer data distribution.
-                  </p>
-                  <div className="pt-4 space-y-2">
-                    <div className="flex items-center justify-between text-[10px] font-bold">
-                      <span className="text-slate-500 uppercase">Input Dim</span>
-                      <span className="text-indigo-400">4,096 [Full]</span>
-                    </div>
-                    <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-indigo-500 h-full w-full" />
-                    </div>
-                    <div className="flex items-center justify-between text-[10px] font-bold pt-2">
-                      <span className="text-slate-500 uppercase">Projected Dim</span>
-                      <span className="text-emerald-400">2 [Lab Visual]</span>
-                    </div>
-                    <div className="w-full bg-slate-800 h-1.5 rounded-full overflow-hidden">
-                      <div className="bg-emerald-500 h-full w-[2%]" />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* TAB CONTENT: K-MEANS */}
-          {activeTab === 'kmeans' && (
-            <div className="bg-[#111116] border border-slate-800/50 rounded-3xl p-8">
-              <h3 className="text-xl font-bold mb-8 flex items-center gap-3">
-                <Database className="text-indigo-500" />
-                Unsupervised Clustering (K-Means)
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {[1, 2, 3].map((clusterId) => (
-                  <div key={clusterId} className="bg-slate-900/40 p-6 rounded-2xl border border-white/5">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="text-xs font-black uppercase text-indigo-400">Cluster #{clusterId}</span>
-                      <div className={`w-2 h-2 rounded-full ${clusterId === 1 ? 'bg-indigo-500' : clusterId === 2 ? 'bg-emerald-500' : 'bg-pink-500'}`} />
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 opacity-40">
-                      {[...Array(4)].map((_, i) => (
-                        <div key={i} className="aspect-square bg-slate-800 rounded-lg animate-pulse" />
-                      ))}
-                    </div>
-                    <p className="mt-4 text-[10px] text-slate-500 leading-tight">
-                      Items grouped based on Euclidean distance to centroid #{clusterId}.
-                    </p>
-                  </div>
-                ))}
-              </div>
-              
-              <div className="mt-8 p-6 bg-indigo-500/5 rounded-2xl border border-indigo-500/10">
-                <h4 className="text-sm font-bold text-indigo-300 mb-2">Unsupervised Logic</h4>
-                <p className="text-xs text-slate-400 leading-relaxed">
-                  Unlike CNN, K-Means does not use labels. It iteratively finds the center of masses (Centroids) 
-                  in the feature space and assigns each point to the closest one.
-                </p>
-              </div>
-            </div>
-          )}
-
-          {/* TAB CONTENT: SVM */}
-          {activeTab === 'svm' && (
-             <div className="bg-[#111116] border border-slate-800/50 rounded-3xl p-8">
-                <h3 className="text-xl font-bold mb-8 flex items-center gap-3">
-                  <Layers className="text-indigo-500" />
-                  SVM Classification Workflow
-                </h3>
-
-                <div className="flex items-center justify-between relative mb-12">
-                  <div className="absolute top-1/2 left-0 right-0 h-[1px] bg-slate-800 -translate-y-1/2 pointer-events-none" />
-                  
-                  {['Features', 'Train', 'Predict'].map((step, i) => (
-                    <div key={step} className="relative z-10 flex flex-col items-center bg-[#111116] px-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center mb-3 border-2 ${
-                        i === 0 ? 'bg-indigo-500 border-indigo-200' : 'bg-slate-900 border-slate-700'
-                      } text-white font-black text-sm`}>
-                        {i + 1}
+              {/* TRAINING VIEW */}
+              {mode === 'training' && (
+                <div className="space-y-8 animate-in fade-in duration-500">
+                  <div className="flex flex-col md:flex-row gap-8 items-start">
+                    {/* TRAINING MONITOR */}
+                    <div className="flex-1 space-y-6">
+                      <div className="flex items-center justify-between">
+                         <h3 className="text-xs font-black uppercase tracking-widest text-amber-500">Backpropagation Engine</h3>
+                         <button 
+                          onClick={() => runTraining(activeTab)}
+                          disabled={loading}
+                          className="bg-amber-600 hover:bg-amber-500 px-6 py-2 rounded-xl text-[10px] font-black text-white transition-all disabled:opacity-50 flex items-center gap-2"
+                         >
+                           {loading ? <RefreshCw className="animate-spin" size={14}/> : <Play size={14} />} INITIATE TRAINING CYCLE
+                         </button>
                       </div>
-                      <span className="text-xs font-bold uppercase tracking-widest text-slate-400">{step}</span>
+
+                      {/* DATASET SIMULATION MOCK */}
+                      <div className="bg-black/30 border border-white/5 p-6 rounded-2xl grid grid-cols-4 gap-4 opacity-40">
+                         {[...Array(8)].map((_, i) => (
+                           <div key={i} className="aspect-square bg-slate-800 rounded-lg flex items-center justify-center border border-dashed border-slate-700">
+                              <Database size={24} className="text-slate-600" />
+                           </div>
+                         ))}
+                         <div className="col-span-4 text-center mt-2">
+                           <span className="text-[10px] text-slate-500 uppercase font-black tracking-widest">Training Dataset: 1,000+ Annotated Samples</span>
+                         </div>
+                      </div>
+
+                      {/* LOSS GRAPH */}
+                      <div className="h-[200px] bg-[#050507] rounded-2xl p-6 border border-white/5 relative flex items-end gap-1">
+                        {!trainHistory.length ? (
+                          <div className="absolute inset-0 flex items-center justify-center text-[10px] text-slate-700 uppercase tracking-widest font-black">
+                            Waiting for Epoch 0
+                          </div>
+                        ) : (
+                          trainHistory.map((h, i) => (
+                            <div 
+                              key={i} 
+                              className="flex-1 bg-amber-500/40 hover:bg-amber-400 transition-all rounded-t-sm border-t border-amber-400"
+                              style={{ height: `${h.loss * 100}%` }}
+                            />
+                          ))
+                        )}
+                        <div className="absolute top-4 left-4 text-[9px] font-black uppercase text-amber-500/50">Training Loss (Cross Entropy Error)</div>
+                      </div>
                     </div>
-                  ))}
-                </div>
 
-                <div className="bg-slate-900/60 p-8 rounded-3xl text-center border border-white/5">
-                  <div className="max-w-md mx-auto space-y-6">
-                    <p className="text-slate-400 text-sm leading-relaxed">
-                      "I extract vectors using <strong>SIFT</strong> or <strong>HOG</strong>, then I find the maximum margin hyperplane to separate your image from everything else."
-                    </p>
-                    <button 
-                      onClick={() => simulateTraining('SVM')}
-                      className="w-full py-4 bg-indigo-600 rounded-2xl text-sm font-black uppercase tracking-widest hover:bg-blue-500 transition-all shadow-[0_0_20px_rgba(79,70,229,0.3)]"
-                    >
-                      Process Classification Cycle
-                    </button>
-                  </div>
-                </div>
-             </div>
-          )}
-
-        </div>
-
-        {/* Sidebar Status / Educational Snippets */}
-        <div className="lg:col-span-4 space-y-8">
-          
-          {/* Quick Stats Panel */}
-          <div className="bg-[#16161a] border border-slate-800/50 rounded-3xl p-8 shadow-2xl">
-            <h4 className="text-xs font-black uppercase text-slate-500 mb-6 tracking-widest flex items-center gap-2">
-              <Activity size={14} className="text-indigo-400" /> 
-              Telemetry Panel
-            </h4>
-            
-            <div className="space-y-6">
-              <div className="flex justify-between items-center bg-slate-900/40 px-4 py-3 rounded-xl border border-white/5">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">Mode</span>
-                <span className="text-xs font-black text-emerald-400 uppercase tracking-tighter">Presentation</span>
-              </div>
-              
-              {activeTab === 'features' && (
-                <div className="space-y-3">
-                  <div className="flex justify-between items-center px-4">
-                    <span className="text-[10px] font-bold text-slate-500 uppercase">SIFT Keypoints</span>
-                    <span className="text-xs font-black text-indigo-400">{siftData?.length || 0}</span>
-                  </div>
-                  <div className="w-full bg-slate-800 h-1 rounded-full overflow-hidden">
-                    <div className="bg-indigo-500 h-full" style={{ width: siftData ? `${Math.min(100, siftData.length/2)}%` : '0%' }} />
+                    {/* STATUS CONSOLE */}
+                    <div className="w-full md:w-80 space-y-4">
+                       <div className="bg-black border border-white/5 rounded-2xl p-6 font-mono text-[10px] h-[400px] overflow-y-auto space-y-2">
+                          <p className="text-emerald-500 leading-tight mb-4">[SYSTEM]: Training module initialized.</p>
+                          {trainHistory.map((h, i) => (
+                            <div key={i} className="border-l border-white/5 pl-2 py-1">
+                              <p className="text-amber-500 font-bold tracking-tight uppercase">Epoch {h.epoch}: Loss {h.loss}</p>
+                              <p className="text-slate-500 leading-3 mt-1">Action: {h.meta.action}</p>
+                              <p className="text-indigo-400 leading-3">Correction: {h.meta.correction}</p>
+                            </div>
+                          ))}
+                          {currentEpoch === 20 && (
+                            <div className="pt-4 text-emerald-500 font-black animate-pulse uppercase tracking-widest">
+                               [SUCCESS]: Global Minima Found. Model state converged.
+                            </div>
+                          )}
+                       </div>
+                    </div>
                   </div>
                 </div>
               )}
-
-              <div className="pt-4 border-t border-slate-800">
-                <div className="flex items-center gap-2 mb-4">
-                  <Info size={14} className="text-yellow-500" />
-                  <span className="text-[10px] font-black uppercase text-slate-400">Theory Snippet</span>
-                </div>
-                <p className="text-[11px] text-slate-500 italic leading-relaxed">
-                  {activeTab === 'cnn' && "Backpropagation calculates the gradient of the loss function with respect to the weights of the network for a single input-output example."}
-                  {activeTab === 'svm' && "SVM avoids the 'curse of dimensionality' by focusing on the Support Vectors—the hardest cases near the decision boundary."}
-                  {activeTab === 'features' && "SIFT is scale-invariant, meaning it finds the same object whether it is zoomed in or far away."}
-                  {activeTab === 'segmentation' && "Mean Shift is a non-parametric feature-space analysis technique used for locating the modes of a density function."}
-                  {activeTab === 'pca' && "By removing correlated variables, PCA effectively speeds up subsequent training and retrieval tasks."}
-                  {activeTab === 'kmeans' && "K-Means is a greedy algorithm: it makes local optimal choices to find global clusters."}
-                </p>
-              </div>
             </div>
           </div>
 
-          {/* Tips for Presentation */}
-          <div className="bg-indigo-600/10 border border-indigo-500/20 rounded-3xl p-8 relative overflow-hidden">
-             <div className="absolute top-0 right-0 p-4 opacity-10">
-               <Share2 size={80} className="text-indigo-400" />
-             </div>
-             <h4 className="text-xs font-black uppercase text-indigo-300 mb-4 tracking-widest">Presentation Tip</h4>
-             <ul className="text-xs text-indigo-200/80 space-y-4 font-medium">
-               <li className="flex gap-3 items-start">
-                 <CheckCircle size={14} className="mt-0.5 text-indigo-400 flex-shrink-0" />
-                 Mention that <strong>Backpropagation</strong> is the 'engine' of Deep Learning.
-               </li>
-               <li className="flex gap-3 items-start">
-                 <CheckCircle size={14} className="mt-0.5 text-indigo-400 flex-shrink-0" />
-                 Show the <strong>HOG</strong> orientations to prove the machine sees "shapes" not just pixels.
-               </li>
-             </ul>
-          </div>
+          {/* SVM BOUNDARY SPECIAL (Specific for SVM Tab) */}
+          {activeTab === 'svm' && (
+            <div className="bg-[#0f0f13] border border-white/5 rounded-3xl p-8 animate-in slide-in-from-right duration-500 overflow-hidden relative">
+              <h3 className="text-[10px] font-black uppercase tracking-widest text-[#6366f1] mb-8 flex items-center gap-2">
+                <Layers size={14}/> Support Vector Machine Separation Boundary
+              </h3>
+              
+              <div className="flex flex-col md:flex-row gap-12 items-center">
+                 <div className="flex-1 aspect-square md:max-w-[400px] w-full bg-black/40 rounded-3xl p-8 relative border border-white/5 flex items-center justify-center">
+                    {/* Scatter plot mock */}
+                    <div className="relative w-full h-full">
+                      {/* Hyperplane line */}
+                      <div className="absolute top-0 bottom-0 left-1/2 w-0.5 bg-indigo-500 shadow-[0_0_15px_#818cf8] -rotate-12 transform-gpu" />
+                      
+                      {/* Dots side A (Cat) */}
+                      {[...Array(12)].map((_, i) => (
+                        <div key={`a-${i}`} className="absolute w-2 h-2 rounded-full bg-emerald-500 opacity-60" style={{ left: `${10+Math.random()*35}%`, top: `${10+Math.random()*80}%` }} />
+                      ))}
+                      
+                      {/* Dots side B (Dog) */}
+                      {[...Array(12)].map((_, i) => (
+                        <div key={`b-${i}`} className="absolute w-2 h-2 rounded-full bg-pink-500 opacity-60" style={{ left: `${55+Math.random()*35}%`, top: `${10+Math.random()*80}%` }} />
+                      ))}
+                      
+                      <div className="absolute top-4 left-4 text-[9px] text-emerald-400 font-black uppercase">Class A</div>
+                      <div className="absolute bottom-4 right-4 text-[9px] text-pink-400 font-black uppercase">Class B</div>
+                    </div>
+                 </div>
+
+                 <div className="flex-1 space-y-6">
+                    <p className="text-xs text-slate-400 leading-relaxed italic">
+                      "In this representation, the SVM has successfully found the <strong>Optimal Hyperplane</strong> (the blue line) that maximizes the margin (space) between the Support Vectors of Class A and Class B."
+                    </p>
+                    <div className="grid grid-cols-2 gap-4">
+                       <div className="bg-black/30 p-4 rounded-xl border border-white/5">
+                          <span className="text-[9px] text-slate-600 block mb-1">Hyperplane Equation</span>
+                          <span className="text-[10px] font-black text-indigo-400 italic font-serif">w·x + b = 0</span>
+                       </div>
+                       <div className="bg-black/30 p-4 rounded-xl border border-white/5">
+                          <span className="text-[9px] text-slate-600 block mb-1">Kernel Type</span>
+                          <span className="text-[10px] font-black text-indigo-400 uppercase">Linear (RBF Support)</span>
+                       </div>
+                    </div>
+                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* PCA PROJECTION (For PCA Tab) */}
+          {activeTab === 'pca' && (
+            <div className="bg-[#0f0f13] border border-white/5 rounded-3xl p-8 animate-in slide-in-from-right duration-500 overflow-hidden">
+               <h3 className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-8 flex items-center gap-2">
+                 <Maximize size={14}/> Feature Dimensionality Reduction (PCA)
+               </h3>
+               
+               <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                  <div className="bg-black/40 aspect-square rounded-3xl p-8 relative border border-white/5 overflow-hidden">
+                     {pcaPoints.length > 0 ? (
+                        <div className="relative w-full h-full">
+                           {pcaPoints.map((p, i) => (
+                             <div 
+                              key={i} 
+                              className={`absolute w-3 h-3 rounded-full shadow-lg cursor-help group transition-transform hover:scale-150 ${p.type === 'CBIR' ? 'bg-indigo-500' : p.type === 'DL' ? 'bg-emerald-500' : 'bg-pink-500'}`}
+                              style={{ left: `${50+(p.x*4)}%`, top: `${50+(p.y*4)}%` }}
+                             >
+                                <div className="hidden group-hover:block absolute bottom-full left-1/2 -translate-x-1/2 mb-2 p-2 bg-white text-black text-[8px] rounded whitespace-nowrap z-30 font-bold uppercase">
+                                  {p.filename} ({p.type})
+                                </div>
+                             </div>
+                           ))}
+                           <div className="absolute inset-0 grid grid-cols-6 grid-rows-6 opacity-5 pointer-events-none">
+                              {[...Array(36)].map((_, i) => <div key={i} className="border border-white/20" />)}
+                           </div>
+                        </div>
+                     ) : (
+                       <div className="flex flex-col items-center justify-center h-full gap-4 text-slate-700">
+                          <Database size={48} className="opacity-10" />
+                          <p className="text-[10px] font-black uppercase tracking-widest">Index images first to see 2D Projection</p>
+                       </div>
+                     )}
+                  </div>
+                  <div className="space-y-6">
+                     <p className="text-xs text-slate-400 leading-relaxed italic">
+                        "Here, I take a high-dimensional vector (e.g. 4096 features from a CNN) and reduce it to just <strong>2 Principal Components</strong>. This speeds up indexing while keeping the most important visual variances."
+                     </p>
+                     <div className="pt-4 space-y-4">
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[9px] font-black uppercase text-indigo-500">
+                            <span>Input Dimensions</span>
+                            <span>4,096 [Neural State]</span>
+                          </div>
+                          <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                            <div className="bg-indigo-600 h-full w-full shadow-[0_0_10px_#6366f1]" />
+                          </div>
+                        </div>
+                        <div className="space-y-1 opacity-60">
+                           <div className="text-[7px] text-slate-700 font-bold uppercase animate-pulse">Processing Covariance Matrix...</div>
+                        </div>
+                        <div className="space-y-1">
+                          <div className="flex justify-between text-[9px] font-black uppercase text-emerald-500">
+                            <span>Transformed Dimensions (PCA Output)</span>
+                            <span>2 [Visualization Ready]</span>
+                          </div>
+                          <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                            <div className="bg-emerald-500 h-full w-[2%] shadow-[0_0_10px_#10b981]" />
+                          </div>
+                        </div>
+                     </div>
+                  </div>
+               </div>
+            </div>
+          )}
 
         </div>
 
+        {/* RIGHT COLUMN: LAB TELEMETRY */}
+        <div className="lg:col-span-4 space-y-6">
+           {/* ALGO DESCRIPTION CARD */}
+           <div className="bg-[#0f0f13] border border-white/5 rounded-3xl p-8 relative overflow-hidden group shadow-xl">
+              <div className="absolute -top-10 -right-10 bg-indigo-500/5 group-hover:bg-indigo-500/10 w-40 h-40 rounded-full blur-[40px] transition-all duration-500" />
+              <div className="flex items-center gap-3 mb-6">
+                <span className="text-3xl filter grayscale contrast-125 opacity-80 group-hover:grayscale-0 group-hover:opacity-100 transition-all duration-500">
+                  {activeTab === 'cnn' && "🧠"}
+                  {activeTab === 'svm' && "📐"}
+                  {activeTab === 'features' && "🧬"}
+                  {activeTab === 'pca' && "📉"}
+                  {activeTab === 'kmeans' && "📦"}
+                  {activeTab === 'segmentation' && "🧩"}
+                </span>
+                <h2 className="text-lg font-black uppercase tracking-tighter truncate">{activeTab.toUpperCase()} Analysis</h2>
+              </div>
+              <p className="text-[11px] text-slate-400 leading-relaxed italic border-l border-indigo-500/30 pl-4 py-2">
+                 {activeTab === 'cnn' && "Réseau Neuronal Convolutif: Automatically extracts hierarchical features. Backpropagation optimizes the weights to minimize error over time."}
+                 {activeTab === 'svm' && "Support Vector Machine: A supervised classifier that finds the optimal hyperplane to separate data into distinct classes."}
+                 {activeTab === 'features' && "Feature Engineering (SIFT & HOG): Mathematical equations used to extract keypoints (Sift) or structural gradients (Hog) for robust matching."}
+                 {activeTab === 'pca' && "Principal Component Analysis: Statistical technique used to reduce computational costs by focusing on variables with the highest variance."}
+                 {activeTab === 'kmeans' && "Unsupervised Clustering: Groups unlabeled images based on the Euclidean distance between their feature vectors."}
+                 {activeTab === 'segmentation' && "Image Segmentation (Mean Shift): Clusters similar pixels into segments to separate foreground objects from the background."}
+              </p>
+           </div>
+
+           {/* STATUS GAUGE */}
+           <div className="bg-[#0f0f13] border border-white/5 rounded-3xl p-8 shadow-xl">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-600 mb-6 flex items-center gap-2">
+                <Activity size={14} className="text-indigo-500" /> Live Telemetry
+              </h4>
+              <div className="space-y-6">
+                 <div className="space-y-2">
+                    <div className="flex justify-between text-[9px] font-bold uppercase">
+                       <span className="text-slate-500">Processing Load</span>
+                       <span className="text-indigo-400">{loading ? "78%" : "2%"}</span>
+                    </div>
+                    <div className="w-full h-1 bg-white/5 rounded-full overflow-hidden border border-white/5">
+                       <div className={`h-full transition-all duration-700 ${loading ? 'bg-indigo-500 w-[78%] animate-pulse' : 'bg-slate-800 w-[2%]'}`} />
+                    </div>
+                 </div>
+
+                 <div className="pt-4 border-t border-white/5">
+                    <div className="flex items-center gap-2 mb-3">
+                       <TrendingDown size={14} className="text-amber-500"/>
+                       <span className="text-[9px] font-black uppercase text-amber-500">Learning Stability</span>
+                    </div>
+                    <div className="flex justify-between text-lg font-black text-white italic">
+                       <span>{mode === 'training' ? 'LOW_VAR' : 'STABLE'}</span>
+                       <CheckCircle size={20} className="text-emerald-500" />
+                    </div>
+                 </div>
+              </div>
+           </div>
+
+           {/* THEORY CORNER */}
+           <div className="bg-indigo-600/5 border border-indigo-500/10 rounded-3xl p-8 relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-4 opacity-10">
+                 <BarChart size={60} className="text-indigo-400 rotate-12" />
+              </div>
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-3 underline underline-offset-4">Academic Insight</h4>
+              <p className="text-[11px] text-indigo-200/60 leading-relaxed font-bold">
+                 {activeTab === 'cnn' && "In Training mode, we use Backpropagation to propagate the error backwards from the output to the input layer to optimize millions of parameters."}
+                 {activeTab === 'svm' && "SVM handles high-dimensional vectors effectively. In Inference mode, it simply checks where the new point falls relative to the decision boundary."}
+                 {activeTab === 'features' && "SIFT is rotation-invariant. SIFT is scale-invariant. This makes the extraction process extremely reliable for object detection."}
+                 {activeTab === 'segmentation' && "Mean Shift moves towards the densest regions of the color space to find the 'Mode' — which becomes the pixel's segment color."}
+                 {activeTab === 'pca' && "By removing noisy features, PCA often improves the accuracy of the overall search system by reducing the Curse of Dimensionality."}
+                 {activeTab === 'kmeans' && "K-Means is an Unsupervised learner. It finds patterns in data that doesn't have labels, grouping images by visual similarity automatically."}
+              </p>
+           </div>
+        </div>
       </main>
 
       {error && (
-        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-red-500 text-white px-6 py-3 rounded-full shadow-2xl flex items-center gap-3 animate-bounce z-50">
-          <AlertTriangle size={18} />
-          <span className="text-sm font-bold">{error}</span>
+        <div className="fixed bottom-12 left-1/2 -translate-x-1/2 z-[100] animate-in slide-in-from-bottom duration-500">
+           <div className="bg-red-600/90 text-white px-8 py-3 rounded-2xl shadow-[0_0_30px_rgba(220,38,38,0.4)] backdrop-blur-md flex items-center gap-4">
+              <AlertTriangle size={18} />
+              <span className="text-xs font-bold uppercase tracking-tight">{error}</span>
+           </div>
         </div>
       )}
     </div>
