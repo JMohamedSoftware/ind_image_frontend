@@ -1581,56 +1581,116 @@ function DetailedComparison({ queryImage, selectedResult, onClose }) {
                                 <>
                                     {/* 📊 Numerical Proof Section */}
                                     {selectedResult.educational_info?.math_proof && (
-                                        <div className="bg-slate-900 rounded-2xl p-6 border border-white/10 shadow-2xl overflow-hidden relative group mb-6">
-                                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
-                                                <span className="text-4xl text-white font-black whitespace-nowrap select-none italic tracking-tighter">PROOF_DATA</span>
-                                            </div>
-                                            
-                                            <div className="flex items-center gap-3 mb-6">
-                                                <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
-                                                    <span className="text-indigo-400 text-xs">📊</span>
+                                        <div className="space-y-6">
+                                            <div className="bg-slate-900 rounded-2xl p-6 border border-white/10 shadow-2xl relative overflow-hidden group">
+                                                <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                                    <span className="text-4xl text-white font-black whitespace-nowrap select-none italic tracking-tighter">PROOF_DATA</span>
                                                 </div>
-                                                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Numerical Comparison Proof</h4>
-                                            </div>
-
-                                            <div className="grid grid-cols-2 gap-6 relative z-10">
-                                                <div className="space-y-1">
-                                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Comparison Metric</span>
-                                                    <p className="text-xs font-mono font-bold text-indigo-300">
-                                                        {selectedResult.educational_info.math_proof.metric}
-                                                    </p>
+                                                
+                                                <div className="flex items-center gap-3 mb-6">
+                                                    <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
+                                                        <span className="text-indigo-400 text-xs">📊</span>
+                                                    </div>
+                                                    <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Mathematical Matching Identity</h4>
                                                 </div>
 
-                                                <div className="space-y-1">
-                                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">
-                                                        {selectedResult.educational_info.math_proof.label || 'Raw Value'}
-                                                    </span>
-                                                    <p className="text-xl font-black font-mono text-white tracking-tight">
-                                                        {selectedResult.educational_info.math_proof.raw_value}
-                                                    </p>
-                                                </div>
-
-                                                {selectedResult.educational_info.math_proof.good_matches !== null && (
+                                                <div className="grid grid-cols-2 gap-6 relative z-10 mb-8">
                                                     <div className="space-y-1">
-                                                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Keypoint Consensus</span>
-                                                        <p className="text-xs font-mono font-bold text-emerald-400">
-                                                            {selectedResult.educational_info.math_proof.good_matches} Points
+                                                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Metric Identity</span>
+                                                        <p className="text-xs font-mono font-bold text-indigo-300">
+                                                            {selectedResult.educational_info.math_proof.metric}
                                                         </p>
+                                                    </div>
+
+                                                    <div className="space-y-1">
+                                                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+                                                            Computed Ratio
+                                                        </span>
+                                                        <p className="text-xl font-black font-mono text-white tracking-tight">
+                                                            {selectedResult.educational_info.math_proof.raw_value}
+                                                        </p>
+                                                    </div>
+                                                </div>
+
+                                                {/* 📐 RAW VECTOR SAMPLES (For Mathematicians) */}
+                                                {(selectedResult.educational_info.math_proof.query_sample?.length > 0) && (
+                                                    <div className="mb-8 space-y-4">
+                                                        <div className="p-4 bg-slate-800/50 rounded-xl border border-white/5">
+                                                            <div className="flex justify-between items-center mb-3">
+                                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Query Vector Segment (A)</span>
+                                                                <span className="text-[8px] text-slate-500 font-mono">dim: {selectedResult.educational_info.math_proof.query_sample.length}+</span>
+                                                            </div>
+                                                            <div className="grid grid-cols-4 gap-2">
+                                                                {selectedResult.educational_info.math_proof.query_sample.map((val, idx) => (
+                                                                    <div key={idx} className="bg-slate-900 border border-white/10 p-1.5 rounded text-[10px] font-mono text-emerald-400 text-center truncate">
+                                                                        {val.toFixed(4)}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+
+                                                        <div className="p-4 bg-slate-800/50 rounded-xl border border-white/5">
+                                                            <div className="flex justify-between items-center mb-3">
+                                                                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Target Vector Segment (B)</span>
+                                                            </div>
+                                                            <div className="grid grid-cols-4 gap-2">
+                                                                {selectedResult.educational_info.math_proof.target_sample.map((val, idx) => (
+                                                                    <div key={idx} className="bg-slate-900 border border-white/10 p-1.5 rounded text-[10px] font-mono text-indigo-400 text-center truncate">
+                                                                        {val.toFixed(4)}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 )}
 
-                                                <div className="space-y-1">
-                                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Transform Strategy</span>
-                                                    <p className="text-[10px] font-bold text-slate-400 italic">
-                                                        Mapping {selectedResult.educational_info.math_proof.metric} → 0..100%
+                                                {/* FORMULA & INTERMEDIATES */}
+                                                <div className="bg-slate-950/50 rounded-xl p-4 border border-white/5 space-y-3">
+                                                    <div className="flex justify-between items-center text-[10px]">
+                                                        <span className="font-bold text-slate-500 uppercase tracking-wider">Algorithmic Identity:</span>
+                                                        <span className="font-mono text-indigo-400 text-sm font-bold bg-indigo-500/10 px-2 py-0.5 rounded">{selectedResult.educational_info.math_proof.formula}</span>
+                                                    </div>
+                                                    
+                                                    {selectedResult.educational_info.math_proof.norms && (
+                                                        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/5">
+                                                            <div>
+                                                                <span className="block text-[8px] text-slate-600 font-black uppercase">Norm ||A||</span>
+                                                                <span className="text-[10px] font-mono text-slate-300 font-bold">{selectedResult.educational_info.math_proof.norms[0]}</span>
+                                                            </div>
+                                                            <div>
+                                                                <span className="block text-[8px] text-slate-600 font-black uppercase">Norm ||B||</span>
+                                                                <span className="text-[10px] font-mono text-slate-300 font-bold">{selectedResult.educational_info.math_proof.norms[1]}</span>
+                                                            </div>
+                                                            <div>
+                                                                <span className="block text-[8px] text-slate-600 font-black uppercase">Dot Product</span>
+                                                                <span className="text-[10px] font-mono text-emerald-400 font-bold">{selectedResult.educational_info.math_proof.dot_product}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {selectedResult.educational_info.math_proof.keypoint_totals && (
+                                                        <div className="grid grid-cols-3 gap-2 pt-2 border-t border-white/5">
+                                                            <div>
+                                                                <span className="block text-[8px] text-slate-600 font-black uppercase">Query KPs</span>
+                                                                <span className="text-[10px] font-mono text-slate-300 font-bold">{selectedResult.educational_info.math_proof.keypoint_totals[0]}</span>
+                                                            </div>
+                                                            <div>
+                                                                <span className="block text-[8px] text-slate-600 font-black uppercase">Target KPs</span>
+                                                                <span className="text-[10px] font-mono text-slate-300 font-bold">{selectedResult.educational_info.math_proof.keypoint_totals[1]}</span>
+                                                            </div>
+                                                            <div>
+                                                                <span className="block text-[8px] text-slate-600 font-black uppercase">Good Matches</span>
+                                                                <span className="text-[10px] font-mono text-emerald-400 font-bold">{selectedResult.educational_info.math_proof.good_matches}</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+
+                                                <div className="mt-6 pt-4 italic">
+                                                    <p className="text-[9px] text-slate-500 leading-relaxed font-medium">
+                                                        Note for Professor: Final percentage is normalized from raw distance/similarity values. All calculations performed in float64 precision before display truncation.
                                                     </p>
                                                 </div>
-                                            </div>
-
-                                            <div className="mt-6 pt-4 border-t border-white/5 italic">
-                                                <p className="text-[9px] text-slate-500 leading-relaxed font-medium">
-                                                    Academic Summary: The similarity percentage is a derived weight. A lower distance (SIFT) or higher dot product (CNN) results in a more significant match rank.
-                                                </p>
                                             </div>
                                         </div>
                                     )}
