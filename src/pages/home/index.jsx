@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import AnalyticalDashboard from '../../components/AnalyticalDashboard';
 
 // ─── CONSTANTS ───────────────────────────────────────────────────────────────
 const INDEXING_TYPES = [
@@ -432,8 +433,22 @@ function ResultCard({ result, rank, onSelect }) {
 
                 <div className="flex items-center justify-between pt-2 border-t border-gray-50">
                     <span className="text-[10px] text-gray-400">{result.matchesCount > 0 ? `${result.matchesCount} matches` : 'Vector Similarity'}</span>
-                    <button className="text-[10px] font-bold text-blue-600 hover:underline">View Analysis →</button>
+                    <div className="flex items-center gap-2">
+                        <button 
+                            onClick={(e) => { e.stopPropagation(); onSelect(result); }}
+                            className="text-[10px] font-bold text-blue-600 hover:underline"
+                        >
+                            View Result →
+                        </button>
+                    </div>
                 </div>
+                <button 
+                   onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('openAnalysis', { detail: result.id })); }}
+                   className="absolute bottom-4 right-4 w-8 h-8 bg-indigo-600 text-white rounded-lg flex items-center justify-center shadow-lg hover:scale-110 transition-transform z-10"
+                   title="Numerical Audit (Raw Math)"
+                >
+                   <span className="text-xs">📂</span>
+                </button>
             </div>
         </div>
     );
@@ -643,8 +658,15 @@ function IndexGallery({ images, totalImages, onClear, algo, onSelectImage }) {
                                         </p>
                                     )}
                                     <div className="mt-2 text-[8px] text-center font-bold text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">
-                                        Detailed Analysis →
+                                        Detailed Comparison →
                                     </div>
+                                    <button 
+                                       onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('openAnalysis', { detail: img.id })); }}
+                                       className="absolute bottom-2 right-2 w-7 h-7 bg-indigo-600 text-white rounded-lg flex items-center justify-center shadow-md hover:scale-110 transition-transform opacity-0 group-hover:opacity-100"
+                                       title="Numerical Audit (Raw Math)"
+                                    >
+                                       <span className="text-[10px]">📂</span>
+                                    </button>
                                 </div>
                             </div>
                         ))}
@@ -1282,8 +1304,22 @@ const HomePage = () => {
                     onClose={() => setSelectedLibraryImage(null)}
                 />
             )}
+
+            <GlobalAnalysisWrapper />
         </div>
     );
+}
+
+// Global Wrapper to handle the event-driven analysis trigger
+function GlobalAnalysisWrapper() {
+    const [id, setId] = useState(null);
+    useEffect(() => {
+        const handle = (e) => setId(e.detail);
+        window.addEventListener('openAnalysis', handle);
+        return () => window.removeEventListener('openAnalysis', handle);
+    }, []);
+    if (!id) return null;
+    return <AnalyticalDashboard imageId={id} onClose={() => setId(null)} />;
 }
 
 // ─── DETAILED COMPARISON (Vector Visualization) ───────────────────────────────

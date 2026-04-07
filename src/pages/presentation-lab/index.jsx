@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import AnalyticalDashboard from '../../components/AnalyticalDashboard';
 import { 
   Zap, 
   Cpu, 
@@ -516,8 +517,22 @@ const PresentationLab = () => {
            </div>
         </div>
       )}
+
+      <GlobalAnalysisWrapper />
     </div>
   );
 };
+
+// Global Wrapper to handle the event-driven analysis trigger
+function GlobalAnalysisWrapper() {
+    const [id, setId] = useState(null);
+    useEffect(() => {
+        const handle = (e) => setId(e.detail);
+        window.addEventListener('openAnalysis', handle);
+        return () => window.removeEventListener('openAnalysis', handle);
+    }, []);
+    if (!id) return null;
+    return <AnalyticalDashboard imageId={id} onClose={() => setId(null)} />;
+}
 
 export default PresentationLab;
