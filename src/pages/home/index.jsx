@@ -31,26 +31,6 @@ const ALGORITHMS = [
         matchDetail: 'Word intersection — finds images sharing the most words with your query.',
     },
     {
-        id: 'ORB',
-        type: 'CBIR',
-        name: 'ORB',
-        full: 'Oriented FAST & Rotated BRIEF',
-        accent: '#7c3aed',
-        light: '#f5f3ff',
-        border: '#ddd6fe',
-        text: '#5b21b6',
-        badge: 'Fast & Efficient',
-        description: 'Ultra-fast binary descriptor. Best for real-time use. Used in robotics & AR.',
-        speed: 5,
-        accuracy: 3,
-        descriptorSize: '32 bytes (256 bits)',
-        descriptorType: 'Binary',
-        matchMetric: 'Hamming (XOR)',
-        detectorDetail: 'FAST corners — checks a ring of 16 pixels; if 9+ are brighter or darker, it\'s a corner',
-        descriptorDetail: 'BRIEF — compares random pixel pairs around each keypoint → 1 bit per comparison → 256 bits total',
-        matchDetail: 'XOR the two binary strings → count different bits (Hamming distance). Fewer different bits = more similar.',
-    },
-    {
         id: 'SIFT',
         type: 'CBIR',
         name: 'SIFT',
@@ -59,36 +39,16 @@ const ALGORITHMS = [
         light: '#ecfeff',
         border: '#a5f3fc',
         text: '#0e7490',
-        badge: 'Most Accurate',
-        description: 'Highly accurate, scale & rotation invariant. The gold standard for matching.',
+        badge: 'Keypoints',
+        description: 'Applies mathematical filters (Difference of Gaussians) to find invariant keypoints that stay stable even if rotated or zoomed.',
         speed: 2,
         accuracy: 5,
-        descriptorSize: '512 bytes (128 × float32)',
+        descriptorSize: '128 × float32',
         descriptorType: 'Float vector',
-        matchMetric: 'L2 / Euclidean distance',
-        detectorDetail: 'DoG (Difference of Gaussians) — blurs image at multiple scales, finds extrema points that are stable across scales',
-        descriptorDetail: 'Divides 16×16 area into 4×4 sub-cells, computes 8-direction gradient histogram per cell → 4×4×8 = 128 floats',
-        matchDetail: 'Euclidean distance: √Σ(a−b)². Smaller = more similar float vectors.',
-    },
-    {
-        id: 'AKAZE',
-        type: 'CBIR',
-        name: 'AKAZE',
-        full: 'Accelerated-KAZE',
-        accent: '#c2410c',
-        light: '#fff7ed',
-        border: '#fed7aa',
-        text: '#9a3412',
-        badge: 'Balanced',
-        description: 'Great balance of speed and accuracy. Excellent for complex textures.',
-        speed: 4,
-        accuracy: 4,
-        descriptorSize: '61 bytes (486 bits)',
-        descriptorType: 'Binary',
-        matchMetric: 'Hamming distance',
-        detectorDetail: 'AOS (Additive Operator Splitting) — uses nonlinear diffusion to smooth the image while preserving edges, finds stable extrema',
-        descriptorDetail: 'M-LDB — computes binary comparisons of gradient values in a local grid around each keypoint → 486 bits',
-        matchDetail: 'Same as ORB: XOR → count differing bits. AKAZE descriptors are larger so matching is slightly slower but more accurate.',
+        matchMetric: 'L2 Distance',
+        detectorDetail: 'DoG — blurs image at multiple scales to find extrema points stable across scales',
+        descriptorDetail: 'Numerical description of the area around each keypoint relative to its neighborhood',
+        matchDetail: 'Euclidean distance calculation between keypoint descriptors.',
     },
     {
         id: 'HOG',
@@ -100,15 +60,15 @@ const ALGORITHMS = [
         border: '#a7f3d0',
         text: '#047857',
         badge: 'Structural',
-        description: 'Focuses on the shape and structure of objects. Famous for being used in human detection.',
+        description: 'Divides image into cells and calculates gradient magnitude/orientation to capture raw geometric shapes and outlines.',
         speed: 4,
         accuracy: 3,
-        descriptorSize: '3,780 features (for 64x128)',
+        descriptorSize: '3,780 features',
         descriptorType: 'Gradient Vector',
         matchMetric: 'Cosine Similarity',
-        detectorDetail: 'Cell-based Gradients — divides image into small cells, computes orientation of edges in each cell',
-        descriptorDetail: 'Block Normalization — local histograms are contrast-normalized by overlapping blocks for better lighting invariance',
-        matchDetail: 'Vector dot product — compares the structural "fingerprint" of the two images.',
+        detectorDetail: 'Cell-based Gradients — computes orientation of edges in small local cells',
+        descriptorDetail: 'Histogram of edge directions — captures the outline and transitions of shadow/light',
+        matchDetail: 'Measures the directional alignment of shapes between images.',
     },
     {
         id: 'CNN',
@@ -120,35 +80,95 @@ const ALGORITHMS = [
         border: '#bfdbfe',
         text: '#1d4ed8',
         badge: 'Deep Learning',
-        description: 'Learns hierarchical patterns automatically. Mimics how the human brain processes vision.',
+        description: 'Advanced architecture that uses Backpropagation to learn. Convolutional layers automatically extract complex hierarchical features.',
         speed: 1,
         accuracy: 5,
-        descriptorSize: '4096 floats (VGG/ResNet)',
+        descriptorSize: '4096 floats',
         descriptorType: 'Neural Embedding',
         matchMetric: 'Euclidean distance',
-        detectorDetail: 'Convolutional Layers — filters slide across the image to find textures, shapes, and complex objects',
-        descriptorDetail: 'Fully Connected Layer — flattens the 2D spatial maps into a single high-dimensional semantic vector',
-        matchDetail: 'Vector distance — similarity is measured in a high-dimensional "latent space" where similar objects group together.',
+        detectorDetail: 'Forward Pass — image passes through convolutional layers to extract textures, shapes, and objects',
+        descriptorDetail: 'Backpropagation — mathematical optimization that adjusts filter weights to minimize error during training',
+        matchDetail: 'Matches high-level semantic concepts extracted after supervised training.',
     },
     {
-        id: 'CLIP',
+        id: 'SVM',
         type: 'DL',
-        name: 'CLIP',
-        full: 'Contrastive Language-Image Pre-training',
-        accent: '#8b5cf6',
+        name: 'SVM',
+        full: 'Support Vector Machine',
+        accent: '#7c3aed',
         light: '#f5f3ff',
-        border: '#c4b5fd',
-        text: '#6d28d9',
-        badge: 'Multimodal AI',
-        description: 'Connects text and images. Allows searching for visual content using natural language.',
-        speed: 3,
-        accuracy: 5,
-        descriptorSize: '512 floats (Latent Space)',
-        descriptorType: 'Multimodal Embedding',
-        matchMetric: 'Cosine Similarity',
-        detectorDetail: 'Transformer Encoder — processes text tokens and image patches into a shared mathematical space',
-        descriptorDetail: 'Projection Head — aligns the visual and textual vectors so "red car" (text) is near "red car" (image)',
-        matchDetail: 'Cosine distance: measures the angle between the text vector and image vectors in the shared space.',
+        border: '#ddd6fe',
+        text: '#5b21b6',
+        badge: 'Classification',
+        description: 'Maps data into high-dimensional space to find the optimal hyperplane (boundary) that maximizes margins between different classes.',
+        speed: 5,
+        accuracy: 4,
+        descriptorSize: '64 floats',
+        descriptorType: 'Binary Classifier',
+        matchMetric: 'Decision Boundary',
+        detectorDetail: 'Supervised Learning — requires pre-extracted numerical data (SIFT/HOG) and labels for training',
+        descriptorDetail: 'Mathematical space mapping — places data points such that a separation boundary can be drawn',
+        matchDetail: 'Checks which side of the hyperplane a new feature vector falls on.',
+    },
+    {
+        id: 'K-MEANS',
+        type: 'DL',
+        name: 'K-Means',
+        full: 'Unsupervised Clustering',
+        accent: '#db2777',
+        light: '#fdf2f8',
+        border: '#fbcfe8',
+        text: '#9d174d',
+        badge: 'Clustering',
+        description: 'Organizes data automatically by placing K initial centroids and iterating until clusters of similar images are mathematically stable.',
+        speed: 4,
+        accuracy: 3,
+        descriptorSize: '16 floats',
+        descriptorType: 'Centroid Vector',
+        matchMetric: 'Centroid Distance',
+        detectorDetail: 'Fitting Phase — feeds thousands of vectors without labels to find natural groupings',
+        descriptorDetail: 'K Centroids — centers of clusters that images are assigned to based on closest distance',
+        matchDetail: 'Assigns new images to the closest pre-defined cluster for fast retrieval.',
+    },
+    {
+        id: 'PCA',
+        type: 'DL',
+        name: 'PCA',
+        full: 'Principal Component Analysis',
+        accent: '#ea580c',
+        light: '#fff7ed',
+        border: '#ffedd5',
+        text: '#9a3412',
+        badge: 'Reduction',
+        description: 'Statistical operation (covariance matrix/eigenvectors) that compresses high-dimensional data into smaller vectors while keeping critical info.',
+        speed: 5,
+        accuracy: 4,
+        descriptorSize: '32 floats',
+        descriptorType: 'Compressed Vector',
+        matchMetric: 'Projection',
+        detectorDetail: 'Identifying Principal Components — axes where data varies the most to determine importance',
+        descriptorDetail: 'Data Compressor — projects heavy vectors into a lower-dimensional space to speed up search',
+        matchDetail: 'Matches compressed features to reduce system load and increase search speed.',
+    },
+    {
+        id: 'MEANSHIFT',
+        type: 'DL',
+        name: 'Mean Shift',
+        full: 'Image Segmentation',
+        accent: '#65a30d',
+        light: '#f7fee7',
+        border: '#ecfccb',
+        text: '#3f6212',
+        badge: 'Segmentation',
+        description: 'Iterative sliding-window algorithm that groups similar colors and intensities to separate main objects from their background.',
+        speed: 2,
+        accuracy: 4,
+        descriptorSize: 'Pixel-based',
+        descriptorType: 'Segment Map',
+        matchMetric: 'Window Shift',
+        detectorDetail: 'Sliding Window — places a window over pixels to calculate mean color/intensity',
+        descriptorDetail: 'Convergence — repeats window shifts until movement stops, smoothing textures into groups',
+        matchDetail: 'Smooths out patterns to isolate the primary subjects within an image.',
     },
 ];
 
@@ -268,12 +288,15 @@ function IndexingOverlay({ algo, stepIndex }) {
 }
 
 const ColorBar = ({ stats }) => {
-    if (!stats) return null;
+    // Standardize stats to prevent layout jumping if some are missing
+    const s = stats || { r: 33, b: 33, g: 33 }; // Neutral gray fallback
+    const isMissing = !stats;
+    
     return (
-        <div className="flex h-1.5 rounded-full overflow-hidden mt-2 bg-gray-100 border border-gray-100">
-            <div style={{ width: `${stats.r}%`, background: '#ef4444' }} />
-            <div style={{ width: `${stats.g}%`, background: '#22c55e' }} />
-            <div style={{ width: `${stats.b}%`, background: '#3b82f6' }} />
+        <div className={`mt-2 h-1.5 w-full flex rounded-full overflow-hidden border ${isMissing ? 'opacity-20 border-gray-300' : 'border-transparent'}`} title={isMissing ? "No color data" : "RGB Distribution"}>
+            <div style={{ width: `${s.r}%`, background: '#ef4444' }} />
+            <div style={{ width: `${s.g}%`, background: '#22c55e' }} />
+            <div style={{ width: `${s.b}%`, background: '#3b82f6' }} />
         </div>
     );
 };
@@ -658,24 +681,29 @@ function IndexGallery({ images, totalImages, onClear, algo, onSelectImage }) {
                                         {img.cnn_label}
                                     </div>
                                 )}
-                                <div className="px-1">
-                                    <p className="text-[10px] font-bold text-gray-400 truncate uppercase tracking-tighter">{img.name}</p>
-                                    <div className="flex items-center justify-between mt-1">
-                                        <span className="text-[9px] px-1.5 py-0.5 bg-blue-50 text-blue-600 rounded-md font-bold">{img.algorithm || 'INDEXED'}</span>
-                                        {img.keypoints > 0 && <span className="text-[9px] text-gray-400 font-mono">{img.keypoints} pts</span>}
+                                <div className="px-1 flex flex-col h-[70px] justify-between">
+                                    <div>
+                                        <p className="text-[10px] font-bold text-gray-500 truncate uppercase tracking-tighter mb-1">{img.name}</p>
+                                        <div className="flex items-center justify-between">
+                                            <span className={`text-[8px] px-1.5 py-0.5 rounded-md font-black uppercase tracking-widest ${img.algorithm ? 'bg-indigo-50 text-indigo-600' : 'bg-gray-100 text-gray-400'}`}>
+                                                {img.algorithm || algo.name}
+                                            </span>
+                                            {img.keypoints > 0 && <span className="text-[8px] text-gray-400 font-mono">{img.keypoints} PTS</span>}
+                                        </div>
                                     </div>
-                                    {img.color_stats && <ColorBar stats={img.color_stats} />}
-                                    {img.description && (
-                                        <p className="mt-1 text-[9px] text-gray-800 font-bold italic truncate border-t border-gray-50 pt-1">
-                                            "{img.description}"
-                                        </p>
-                                    )}
-                                    <div className="mt-2 text-[8px] text-center font-bold text-violet-500 opacity-0 group-hover:opacity-100 transition-opacity uppercase tracking-widest">
-                                        Detailed Comparison →
+                                    
+                                    <div className="pb-1">
+                                        <ColorBar stats={img.color_stats} />
+                                        {img.description && (
+                                            <p className="mt-1 text-[8px] text-gray-400 font-medium italic truncate">
+                                                "{img.description}"
+                                            </p>
+                                        )}
                                     </div>
+
                                     <button 
                                        onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('openAnalysis', { detail: img.id })); }}
-                                       className="absolute bottom-2 right-2 w-7 h-7 bg-indigo-600 text-white rounded-lg flex items-center justify-center shadow-md hover:scale-110 transition-transform opacity-0 group-hover:opacity-100"
+                                       className="absolute bottom-2 right-2 w-7 h-7 bg-indigo-600 text-white rounded-lg flex items-center justify-center shadow-lg hover:scale-110 transition-transform opacity-0 group-hover:opacity-100 z-20"
                                        title="Numerical Audit (Raw Math)"
                                     >
                                        <span className="text-[10px]">📂</span>
@@ -1029,14 +1057,6 @@ const HomePage = () => {
                         </button>
                     ))}
                     
-                    {/* EMERGENCY: Redirect to the Tayara Pro Max Lab for Presentation Mode */}
-                    <button
-                        onClick={() => window.location.href = '/lab'}
-                        className="flex-1 py-4 flex flex-col items-center gap-1 transition-all border-b-2 border-transparent bg-indigo-600 text-white hover:bg-indigo-700"
-                    >
-                        <span className="text-xl">🚀</span>
-                        <span className="text-[10px] font-black uppercase tracking-widest">Open AI Lab</span>
-                    </button>
                 </div>
             </div>
 

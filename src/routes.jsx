@@ -9,7 +9,6 @@ const Routes = () => {
         <BrowserRouter>
             <ErrorBoundary>
                 <RouterRoutes>
-                    <Route path="/lab" element={<PresentationLab />} />
                     <Route path="*" element={<HomePage />} />
                 </RouterRoutes>
             </ErrorBoundary>
