@@ -1536,25 +1536,83 @@ function DetailedComparison({ queryImage, selectedResult, onClose }) {
                                     </div>
                                 </div>
                             ) : (
-                                <div className="space-y-4">
-                                    <div>
-                                        <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
-                                            <span>QUERY FEATURE</span>
-                                            <span>{queryColors ? `R:${queryColors.r}% G:${queryColors.g}% B:${queryColors.b}%` : 'N/A'}</span>
+                                <>
+                                    {/* 📊 Numerical Proof Section */}
+                                    {selectedResult.educational_info?.math_proof && (
+                                        <div className="bg-slate-900 rounded-2xl p-6 border border-white/10 shadow-2xl overflow-hidden relative group mb-6">
+                                            <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity">
+                                                <span className="text-4xl text-white font-black whitespace-nowrap select-none italic tracking-tighter">PROOF_DATA</span>
+                                            </div>
+                                            
+                                            <div className="flex items-center gap-3 mb-6">
+                                                <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/30 flex items-center justify-center">
+                                                    <span className="text-indigo-400 text-xs">📊</span>
+                                                </div>
+                                                <h4 className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400">Numerical Comparison Proof</h4>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-6 relative z-10">
+                                                <div className="space-y-1">
+                                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Comparison Metric</span>
+                                                    <p className="text-xs font-mono font-bold text-indigo-300">
+                                                        {selectedResult.educational_info.math_proof.metric}
+                                                    </p>
+                                                </div>
+
+                                                <div className="space-y-1">
+                                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">
+                                                        {selectedResult.educational_info.math_proof.label || 'Raw Value'}
+                                                    </span>
+                                                    <p className="text-xl font-black font-mono text-white tracking-tight">
+                                                        {selectedResult.educational_info.math_proof.raw_value}
+                                                    </p>
+                                                </div>
+
+                                                {selectedResult.educational_info.math_proof.good_matches !== null && (
+                                                    <div className="space-y-1">
+                                                        <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Keypoint Consensus</span>
+                                                        <p className="text-xs font-mono font-bold text-emerald-400">
+                                                            {selectedResult.educational_info.math_proof.good_matches} Points
+                                                        </p>
+                                                    </div>
+                                                )}
+
+                                                <div className="space-y-1">
+                                                    <span className="text-[9px] font-black text-slate-500 uppercase tracking-widest block mb-1">Transform Strategy</span>
+                                                    <p className="text-[10px] font-bold text-slate-400 italic">
+                                                        Mapping {selectedResult.educational_info.math_proof.metric} → 0..100%
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-6 pt-4 border-t border-white/5 italic">
+                                                <p className="text-[9px] text-slate-500 leading-relaxed font-medium">
+                                                    Academic Summary: The similarity percentage is a derived weight. A lower distance (SIFT) or higher dot product (CNN) results in a more significant match rank.
+                                                </p>
+                                            </div>
                                         </div>
-                                        {queryColors && <ColorBar stats={queryColors} />}
-                                    </div>
-                                    <div className="flex justify-center py-1 opacity-20">
-                                        <span className="text-xl">↕</span>
-                                    </div>
-                                    <div>
-                                        <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
-                                            <span>TARGET FEATURE</span>
-                                            {targetColors && <span>R:{targetColors.r}% G:{targetColors.g}% B:{targetColors.b}%</span>}
+                                    )}
+
+                                    <div className="space-y-4 mt-6">
+                                        <div>
+                                            <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
+                                                <span>QUERY FEATURE</span>
+                                                <span>{queryColors ? `R:${queryColors.r}% G:${queryColors.g}% B:${queryColors.b}%` : 'N/A'}</span>
+                                            </div>
+                                            {queryColors && <ColorBar stats={queryColors} />}
                                         </div>
-                                        {targetColors && <ColorBar stats={targetColors} />}
+                                        <div className="flex justify-center py-1 opacity-20">
+                                            <span className="text-xl">↕</span>
+                                        </div>
+                                        <div>
+                                            <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
+                                                <span>TARGET FEATURE</span>
+                                                {targetColors && <span>R:{targetColors.r}% G:{targetColors.g}% B:{targetColors.b}%</span>}
+                                            </div>
+                                            {targetColors && <ColorBar stats={targetColors} />}
+                                        </div>
                                     </div>
-                                </div>
+                                </>
                             )}
                         </div>
                     </div>
