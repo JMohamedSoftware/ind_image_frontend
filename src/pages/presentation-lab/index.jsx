@@ -188,8 +188,8 @@ const PresentationLab = () => {
                           {/* DYNAMIC ANALYSIS OVERLAYS */}
                           {analysis && (
                             <div className="absolute inset-0 pointer-events-none">
-                               {/* SIFT KEYPOINTS */}
-                               {activeTab === 'features' && analysis.sift_keypoints?.map((kp, i) => (
+                               {/* SVM ENHANCEMENT: Show HOG/SIFT as the source of SVM features */}
+                               {(activeTab === 'features' || activeTab === 'svm') && analysis.sift_keypoints?.map((kp, i) => (
                                  <div 
                                   key={i} 
                                   className="absolute w-1.5 h-1.5 border border-yellow-400 rounded-full bg-yellow-400/20"
@@ -197,8 +197,7 @@ const PresentationLab = () => {
                                  />
                                ))}
 
-                               {/* HOG GRADIENTS */}
-                               {activeTab === 'features' && analysis.hog_orientations?.map((row, y) => 
+                               {(activeTab === 'features' || activeTab === 'svm') && analysis.hog_orientations?.map((row, y) => 
                                  row.map((angle, x) => (
                                   <div 
                                     key={`${x}-${y}`} 
@@ -263,12 +262,17 @@ const PresentationLab = () => {
                         </p>
                       </div>
 
-                      {/* CLASSIFICATION (CNN/IA Result) */}
+                      {/* CLASSIFICATION (SVM/CNN/IA Result) */}
                       <div className="bg-black/40 border border-white/5 rounded-2xl p-6">
                         <div className="flex items-center justify-between mb-6">
                           <h4 className="text-[10px] font-black uppercase text-emerald-400 tracking-widest flex items-center gap-2">
-                            <Target size={14} /> IA Prediction (Inference)
+                            <Target size={14} /> {activeTab === 'svm' ? 'SVM CLASSIFIER RESULT' : 'IA Prediction (Inference)'}
                           </h4>
+                          {activeTab === 'svm' && (
+                             <span className="text-[8px] bg-indigo-600/20 text-indigo-400 px-2 py-0.5 rounded border border-indigo-500/20 font-black">
+                               INPUT: SIFT/HOG FEATURES
+                             </span>
+                          )}
                         </div>
                         
                         <div className="space-y-4">
@@ -400,7 +404,7 @@ const PresentationLab = () => {
 
                  <div className="flex-1 space-y-6">
                     <p className="text-xs text-slate-400 leading-relaxed italic">
-                      "In this representation, the SVM has successfully found the <strong>Optimal Hyperplane</strong> (the blue line) that maximizes the margin (space) between the Support Vectors of Class A and Class B."
+                      "Unlike CNN which takes raw pixels, <strong>SVM uses the HOG/SIFT features</strong> you see highlighted on the image above. It plots these visual markers as points in a multidimensional space and finds the <strong>Optimal Hyperplane</strong> to separate the classes."
                     </p>
                     <div className="grid grid-cols-2 gap-4">
                        <div className="bg-black/30 p-4 rounded-xl border border-white/5">
