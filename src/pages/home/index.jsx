@@ -1332,16 +1332,20 @@ const HomePage = () => {
                                             <div>
                                                 <div className="flex items-center gap-2 mb-1">
                                                     <span className="px-2 py-0.5 bg-indigo-100 text-indigo-700 text-[10px] font-black rounded border border-indigo-200 uppercase tracking-widest">
-                                                        Deep Learning Result
+                                                        Supervised Learning Engine
                                                     </span>
                                                     <div className="flex gap-1">
                                                         <div className="w-1 h-1 bg-green-500 rounded-full animate-ping" />
                                                         <div className="w-1 h-1 bg-green-500 rounded-full" />
                                                     </div>
                                                 </div>
-                                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">AI Identification:</h3>
+                                                <h3 className="text-sm font-bold text-gray-400 uppercase tracking-widest mb-1">Learned Prediction:</h3>
                                                 <p className="text-4xl font-black text-gray-900 tracking-tighter leading-none italic uppercase">
                                                     {searchResults.results[0].cnn_label}
+                                                </p>
+                                                <p className="text-[10px] text-indigo-500 font-bold mt-2 flex items-center gap-1">
+                                                    <span className="w-1 h-1 bg-indigo-500 rounded-full" />
+                                                    Based on Nearest Neighbor from Trained Database
                                                 </p>
                                             </div>
                                         </div>
