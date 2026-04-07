@@ -619,7 +619,7 @@ function FeatureRepresentationModal({ image, onClose }) {
     );
 }
 // ─── INDEX GALLERY ──────────────────────────────────────────────────────────
-function IndexGallery({ images, totalImages, onClear, algo, onSelectImage }) {
+function IndexGallery({ images, totalImages, onClear, algo, onSelectImage, onSearch, setQueryImage }) {
     if (images.length === 0 && totalImages === 0) return null;
 
     const isTBIR = algo.type === 'TBIR';
@@ -637,6 +637,25 @@ function IndexGallery({ images, totalImages, onClear, algo, onSelectImage }) {
         });
         return map;
     }, [images, isTBIR]);
+
+    const handleSearchFromPool = async (e, img) => {
+        e.stopPropagation();
+        try {
+            // Fetch the image as a blob so handleSearch can treat it like a file upload
+            const response = await fetch(img.url || img.preview);
+            const blob = await response.blob();
+            const file = new File([blob], img.name, { type: blob.type });
+            
+            setQueryImage({ preview: img.url || img.preview, name: img.name, file });
+            onSearch(file);
+            
+            // Scroll to search section
+            window.scrollTo({ top: 300, behavior: 'smooth' });
+        } catch (err) {
+            console.error("Pool Search Error:", err);
+            alert("Could not process pool image for search.");
+        }
+    };
 
     return (
         <section className="mt-12 p-8 bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200">
@@ -687,10 +706,21 @@ function IndexGallery({ images, totalImages, onClear, algo, onSelectImage }) {
                                         <div
                                             key={j}
                                             onClick={() => onSelectImage(img)}
-                                            className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-2 py-1 cursor-pointer hover:bg-violet-50 hover:border-violet-200 transition-all group"
+                                            className="flex items-center gap-2 bg-gray-50 border border-gray-100 rounded-xl px-2 py-1 cursor-pointer hover:bg-violet-50 hover:border-violet-200 transition-all group relative"
                                         >
                                             <img src={img.url || img.preview} alt={img.name} className="w-8 h-8 rounded-lg object-cover border border-gray-100" />
                                             <p className="text-[9px] text-gray-600 font-bold max-w-[80px] truncate group-hover:text-violet-700">{img.name}</p>
+                                            
+                                            {/* TBIR Search Action */}
+                                            {!isSearching && (
+                                                <button 
+                                                    onClick={(e) => handleSearchFromPool(e, img)}
+                                                    className="absolute -top-1 -right-1 w-4 h-4 bg-violet-600 text-white rounded-full flex items-center justify-center text-[8px] shadow-sm opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    title="Search with this"
+                                                >
+                                                    🔍
+                                                </button>
+                                            )}
                                         </div>
                                     ))}
                                 </div>
@@ -732,13 +762,23 @@ function IndexGallery({ images, totalImages, onClear, algo, onSelectImage }) {
                                         )}
                                     </div>
 
-                                    <button 
-                                       onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('openAnalysis', { detail: img.id })); }}
-                                       className="absolute bottom-2 right-2 w-7 h-7 bg-indigo-600 text-white rounded-lg flex items-center justify-center shadow-lg hover:scale-110 transition-transform opacity-0 group-hover:opacity-100 z-20"
-                                       title="Numerical Audit (Raw Math)"
-                                    >
-                                       <span className="text-[10px]">📂</span>
-                                    </button>
+                                    {/* Action Buttons Overlay */}
+                                    <div className="absolute bottom-2 right-2 flex gap-1 z-20">
+                                        <button 
+                                            onClick={(e) => handleSearchFromPool(e, img)}
+                                            className="w-7 h-7 bg-emerald-600 text-white rounded-lg flex items-center justify-center shadow-lg hover:scale-110 transition-transform opacity-60 group-hover:opacity-100"
+                                            title="Search with this image"
+                                        >
+                                            <span className="text-[10px]">🔍</span>
+                                        </button>
+                                        <button 
+                                            onClick={(e) => { e.stopPropagation(); window.dispatchEvent(new CustomEvent('openAnalysis', { detail: img.id })); }}
+                                            className="w-7 h-7 bg-indigo-600 text-white rounded-lg flex items-center justify-center shadow-lg hover:scale-110 transition-transform opacity-60 group-hover:opacity-100"
+                                            title="Numerical Audit (Raw Math)"
+                                        >
+                                            <span className="text-[10px]">📂</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -1292,7 +1332,7 @@ const HomePage = () => {
 
                             <button
                                 onClick={() => handleSearch()}
-                                disabled={isSearching || (algo.type !== 'TBIR' && algo.id !== 'CLIP' && !queryImage) || ((algo.type === 'TBIR' || algo.id === 'CLIP') && !textQuery.trim() && !queryImage) || indexedImages.length === 0}
+                                disabled={isSearching || (algo.type !== 'TBIR' && algo.id !== 'CLIP' && !queryImage) || ((algo.type === 'TBIR' || algo.id === 'CLIP') && !textQuery.trim() && !queryImage) || (indexedImages.length === 0)}
                                 className="w-full py-4 rounded-2xl font-black text-white text-lg transition-all active:scale-95 disabled:grayscale disabled:opacity-50 shadow-lg hover:shadow-xl"
                                 style={{ background: algo.accent }}
                             >
@@ -1397,6 +1437,8 @@ const HomePage = () => {
                     onClear={handleClearIndex}
                     algo={algo}
                     onSelectImage={setSelectedLibraryImage}
+                    onSearch={handleSearch}
+                    setQueryImage={setQueryImage}
                 />
 
             </main>
