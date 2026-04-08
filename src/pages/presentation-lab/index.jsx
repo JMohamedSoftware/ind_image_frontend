@@ -142,7 +142,7 @@ const PresentationLab = () => {
            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${activeTab === 'cnn' ? 'bg-indigo-500/20 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'bg-slate-900 border-white/5'}`}>
               <Zap size={18} className={activeTab === 'cnn' ? 'text-indigo-400' : 'text-slate-500'} />
            </div>
-           <span className={`text-[8px] font-black uppercase ${activeTab === 'cnn' ? 'text-indigo-400' : 'text-slate-600'}`}>Deep Learning</span>
+           <span className={`text-[8px] font-black uppercase ${activeTab === 'cnn' ? 'text-indigo-400' : 'text-slate-600'}`}>Machine Learning</span>
         </div>
 
         <ArrowRight size={14} className="text-slate-800 shrink-0" />

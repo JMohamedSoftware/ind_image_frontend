@@ -6,7 +6,7 @@ import AnalyticalDashboard from '../../components/AnalyticalDashboard';
 const INDEXING_TYPES = [
     { id: 'TBIR', name: 'Text-Based', icon: '📝', desc: 'Metadata & Keywords' },
     { id: 'CBIR', name: 'Content-Based', icon: '🎨', desc: 'Pixels, Shapes & Colors' },
-    { id: 'DL', name: 'Deep Learning', icon: '🧠', desc: 'Neural Embeddings' },
+    { id: 'DL', name: 'Machine Learning', icon: '🧠', desc: 'Advanced AI Models' },
 ];
 
 const ALGORITHMS = [
