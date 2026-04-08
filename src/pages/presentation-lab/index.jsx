@@ -101,6 +101,62 @@ const PresentationLab = () => {
     segmentation: { name: 'Mean Shift', desc: 'Image Segmentation', color: '#10b981' }
   };
 
+  const ScientificLineage = () => {
+    const isFeatureDep = ['svm', 'kmeans', 'pca'].includes(activeTab);
+    const isNeuralDep = ['cnn'].includes(activeTab);
+    
+    return (
+      <div className="mb-8 px-6 py-4 bg-black/40 border border-white/5 rounded-3xl flex items-center justify-between gap-2 overflow-x-auto custom-scrollbar no-scrollbar">
+        <div className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'inference' ? 'opacity-50' : ''}`}>
+           <div className="w-8 h-8 rounded-lg bg-slate-800 flex items-center justify-center border border-white/10">
+              <Database size={14} className="text-slate-400" />
+           </div>
+           <span className="text-[7px] font-black uppercase text-slate-500">Raw Pixels</span>
+        </div>
+
+        <ArrowRight size={14} className="text-slate-800 shrink-0" />
+
+        <div className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'features' ? 'scale-110 shadow-lg' : isFeatureDep ? 'opacity-100' : 'opacity-30'}`}>
+           <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${activeTab === 'features' ? 'bg-yellow-500/20 border-yellow-500/50 shadow-[0_0_15px_rgba(234,179,8,0.2)]' : 'bg-slate-900 border-white/5'}`}>
+              <Layers size={18} className={activeTab === 'features' ? 'text-yellow-400' : 'text-slate-500'} />
+           </div>
+           <span className={`text-[8px] font-black uppercase ${activeTab === 'features' ? 'text-yellow-400' : 'text-slate-600'}`}>CBIR (Descriptors)</span>
+        </div>
+
+        <div className="flex-1 h-px bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 relative">
+           {(isFeatureDep || activeTab === 'features') && <div className="absolute inset-0 bg-indigo-500/30 animate-pulse" />}
+        </div>
+
+        <div className={`flex flex-col items-center gap-1 transition-all ${['svm', 'kmeans', 'pca'].includes(activeTab) ? 'scale-110 shadow-lg' : 'opacity-30'}`}>
+           <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${['svm', 'kmeans', 'pca'].includes(activeTab) ? 'bg-purple-500/20 border-purple-500/50 shadow-[0_0_15px_rgba(139,92,246,0.2)]' : 'bg-slate-900 border-white/5'}`}>
+              <Cpu size={18} className={['svm', 'kmeans', 'pca'].includes(activeTab) ? 'text-purple-400' : 'text-slate-500'} />
+           </div>
+           <span className={`text-[8px] font-black uppercase ${['svm', 'kmeans', 'pca'].includes(activeTab) ? 'text-purple-400' : 'text-slate-600'}`}>ML Model</span>
+        </div>
+
+        <div className="flex-1 h-px bg-gradient-to-r from-slate-800 via-slate-700 to-slate-800 relative">
+           {isNeuralDep && <div className="absolute inset-0 bg-indigo-500/30 animate-pulse" />}
+        </div>
+
+        <div className={`flex flex-col items-center gap-1 transition-all ${activeTab === 'cnn' ? 'scale-110 shadow-lg' : 'opacity-30'}`}>
+           <div className={`w-10 h-10 rounded-xl flex items-center justify-center border transition-all ${activeTab === 'cnn' ? 'bg-indigo-500/20 border-indigo-500/50 shadow-[0_0_15px_rgba(99,102,241,0.2)]' : 'bg-slate-900 border-white/5'}`}>
+              <Zap size={18} className={activeTab === 'cnn' ? 'text-indigo-400' : 'text-slate-500'} />
+           </div>
+           <span className={`text-[8px] font-black uppercase ${activeTab === 'cnn' ? 'text-indigo-400' : 'text-slate-600'}`}>Deep Learning</span>
+        </div>
+
+        <ArrowRight size={14} className="text-slate-800 shrink-0" />
+
+        <div className={`flex flex-col items-center gap-1 transition-all opacity-100`}>
+           <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center border border-emerald-500/20">
+              <CheckCircle size={14} className="text-emerald-500" />
+           </div>
+           <span className="text-[7px] font-black uppercase text-emerald-600">Decision</span>
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-[#020203] text-slate-200 font-mono overflow-x-hidden">
       
@@ -149,8 +205,10 @@ const PresentationLab = () => {
       <main className="max-w-7xl mx-auto p-6 md:p-12 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8">
         
         {/* LEFT: CORE WORKBENCH */}
-        <div className="lg:col-span-8 space-y-8">
+        <div className="lg:col-span-8 space-y-6">
            
+           <ScientificLineage />
+
            <div className="bg-[#0a0a10] border border-white/5 rounded-[40px] shadow-2xl overflow-hidden flex flex-col min-h-[600px]">
               {/* PHASE SELECTOR (The Academic Split) */}
               {['features', 'segmentation'].includes(activeTab) ? (
