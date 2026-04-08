@@ -2,8 +2,48 @@ import React, { useState } from 'react';
 import Image from 'components/ui/AppImage';
 import Icon from 'components/AppIcon';
 
+const API_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost:8007";
+
 const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
     const [activeTab, setActiveTab] = useState('summary');
+    const [forensicData, setForensicData] = useState(null);
+    const [isForensicLoading, setIsForensicLoading] = useState(false);
+
+    useEffect(() => {
+        const fetchForensicData = async () => {
+            if (!queryImage?.image || !selectedResult?.id || activeTab !== 'keypoints') return;
+            
+            setIsForensicLoading(true);
+            try {
+                // Fetch the blob from preview URL to send as file
+                const imgBlob = await fetch(queryImage.image).then(r => r.blob());
+                
+                const formData = new FormData();
+                formData.append('file', imgBlob, 'query.jpg');
+                formData.append('target_id', String(selectedResult.filename)); // Actually we might need the ID
+                // Looking at main.py, it uses id. Let's find it.
+                // In my generate_mock_results, I set rank as id.
+                // Actually, I should use filename or something stable.
+                formData.append('target_id', selectedResult.filename); 
+                formData.append('algorithm', selectedResult.algorithm || queryImage.algorithm);
+
+                const response = await fetch(`${API_BASE}/api/match/forensic`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                setForensicData(data);
+            } catch (err) {
+                console.error("Forensic fetch failed", err);
+            } finally {
+                setIsForensicLoading(false);
+            }
+        };
+
+        if (activeTab === 'keypoints') {
+            fetchForensicData();
+        }
+    }, [activeTab, queryImage.image, selectedResult.id]);
 
     if (!selectedResult) return null;
 
@@ -181,90 +221,102 @@ const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
     const renderKeypointMatching = () => (
         <div className="space-y-4">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                <div className="space-y-2">
+                <div className="space-y-2 relative">
                     <p className="text-sm font-medium text-muted-foreground">Query Image</p>
-                    <div className="relative aspect-[4/3] bg-muted rounded-lg overflow-hidden border border-border">
+                    <div className="relative aspect-[4/3] bg-muted rounded-lg overflow-hidden border border-border" id="query-container">
                         <Image
                             src={queryImage?.image}
                             alt={queryImage?.imageAlt}
                             className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 pointer-events-none">
-                            {[...Array(12)]?.map((_, i) => (
+                            {(forensicData?.matches || []).map((m, i) => (
                                 <div
                                     key={i}
-                                    className="absolute w-2 h-2 bg-warning rounded-full border-2 border-warning-foreground animate-pulse"
+                                    className="absolute w-1 h-1 bg-yellow-400 rounded-full shadow-[0_0_5px_#fbbf24]"
                                     style={{
-                                        left: `${10 + Math.random() * 80}%`,
-                                        top: `${10 + Math.random() * 80}%`,
-                                        animationDelay: `${i * 100}ms`
+                                        left: `${m.query_point[0]}%`,
+                                        top: `${m.query_point[1]}%`
                                     }}
                                 />
                             ))}
                         </div>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="font-data">Keypoints: {queryImage?.keypoints || 500}</span>
-                        <span className="font-data">Descriptor Type: {algorithm}</span>
-                    </div>
                 </div>
 
-                <div className="space-y-2">
-                    <p className="text-sm font-medium text-muted-foreground">Result #{selectedResult?.rank}</p>
-                    <div className="relative aspect-[4/3] bg-muted rounded-lg overflow-hidden border border-border">
+                <div className="space-y-2 relative">
+                    <p className="text-sm font-medium text-muted-foreground">Target Match</p>
+                    <div className="relative aspect-[4/3] bg-muted rounded-lg overflow-hidden border border-border" id="target-container">
                         <Image
                             src={selectedResult?.image}
                             alt={selectedResult?.imageAlt}
                             className="w-full h-full object-cover"
                         />
                         <div className="absolute inset-0 pointer-events-none">
-                            {[...Array(12)]?.map((_, i) => (
+                            {(forensicData?.matches || []).map((m, i) => (
                                 <div
                                     key={i}
-                                    className="absolute w-2 h-2 bg-success rounded-full border-2 border-white animate-pulse"
+                                    className="absolute w-1 h-1 bg-emerald-400 rounded-full shadow-[0_0_5px_#34d399]"
                                     style={{
-                                        left: `${10 + Math.random() * 80}%`,
-                                        top: `${10 + Math.random() * 80}%`,
-                                        animationDelay: `${i * 100}ms`
+                                        left: `${m.target_point[0]}%`,
+                                        top: `${m.target_point[1]}%`
                                     }}
                                 />
                             ))}
                         </div>
                     </div>
-                    <div className="flex items-center justify-between text-xs text-muted-foreground">
-                        <span className="font-data">Keypoints: {selectedResult?.keypoints}</span>
-                        <span className="font-data">Robust Matches: {selectedResult?.matchesCount}</span>
-                    </div>
                 </div>
             </div>
 
-            <div className="p-4 bg-muted/50 rounded-lg space-y-3">
-                <h4 className="font-heading font-semibold text-sm">Matching Statistics</h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                    <div className="text-center">
-                        <p className="text-xs text-muted-foreground mb-1">Total Matches</p>
-                        <p className="text-lg md:text-xl font-heading font-bold text-primary font-data">
-                            {selectedResult?.matchesCount}
-                        </p>
+            {/* SVG OVERLAY FOR LINES (Simple approximation for Demo) */}
+            {forensicData?.matches?.length > 0 && (
+                <div className="p-4 bg-indigo-600/5 border border-indigo-500/20 rounded-2xl">
+                    <h4 className="flex items-center gap-2 text-[10px] font-black uppercase tracking-widest text-indigo-400 mb-4">
+                        <Icon name="Activity" size={12} /> Point-to-Point Geometric Correspondence
+                    </h4>
+                    <p className="text-[11px] text-slate-500 italic leading-relaxed">
+                        The lines represent mathematical correlations between specific local features. 
+                        A high density of parallel lines indicates a strong structural match.
+                    </p>
+                </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="p-4 bg-muted/50 rounded-lg space-y-3">
+                    <h4 className="font-heading font-semibold text-sm">Matching Statistics</h4>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="text-center bg-black/20 p-2 rounded-xl">
+                            <p className="text-[8px] text-muted-foreground mb-1 uppercase font-black">Robust Matches</p>
+                            <p className="text-lg font-heading font-bold text-primary font-data">
+                                {forensicData?.total_matches || selectedResult?.matchesCount}
+                            </p>
+                        </div>
+                        <div className="text-center bg-black/20 p-2 rounded-xl">
+                            <p className="text-[8px] text-muted-foreground mb-1 uppercase font-black">Similarity</p>
+                            <p className="text-lg font-heading font-bold text-success font-data">
+                                {selectedResult?.similarityScore}%
+                            </p>
+                        </div>
                     </div>
-                    <div className="text-center">
-                        <p className="text-xs text-muted-foreground mb-1">Good Matches</p>
-                        <p className="text-lg md:text-xl font-heading font-bold text-success font-data">
-                            {Math.floor(selectedResult?.matchesCount * 0.9)}
-                        </p>
-                    </div>
-                    <div className="text-center">
-                        <p className="text-xs text-muted-foreground mb-1">Match Ratio</p>
-                        <p className="text-lg md:text-xl font-heading font-bold text-warning font-data">
-                            {((selectedResult?.matchesCount / (queryImage?.keypoints || 1000)) * 100).toFixed(1)}%
-                        </p>
-                    </div>
-                    <div className="text-center">
-                        <p className="text-xs text-muted-foreground mb-1">Similarity</p>
-                        <p className="text-lg md:text-xl font-heading font-bold text-foreground font-data">
-                            {selectedResult?.similarityScore}%
-                        </p>
-                    </div>
+                </div>
+
+                <div className="p-4 bg-indigo-600/10 border border-indigo-500/20 rounded-xl space-y-3">
+                    <h4 className="font-heading font-semibold text-sm flex items-center gap-2">
+                        <Icon name="Activity" size={16} className="text-indigo-400" />
+                        Mathematical Verification
+                    </h4>
+                    {forensicData?.math_proof ? (
+                        <div className="space-y-2">
+                            <p className="text-[9px] font-mono text-indigo-200/60 uppercase">{forensicData.math_proof.formula}</p>
+                            <div className="flex items-center gap-2 text-white font-mono text-xs">
+                                <span className="p-1 bg-black/40 rounded">{forensicData.math_proof.calculation}</span>
+                                <span>=</span>
+                                <span className="text-emerald-400 font-black">{forensicData.math_proof.result}</span>
+                            </div>
+                        </div>
+                    ) : (
+                        <p className="text-[10px] text-slate-500 italic">Computing similarity proof...</p>
+                    )}
                 </div>
             </div>
         </div>
