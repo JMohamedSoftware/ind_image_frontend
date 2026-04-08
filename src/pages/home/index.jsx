@@ -1504,7 +1504,7 @@ function DetailedComparison({ queryImage, selectedResult, searchResults, onClose
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-8 bg-gray-900/90 backdrop-blur-lg animate-in fade-in duration-300">
             <div className="bg-white w-full max-w-5xl rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row h-full max-h-[90vh]">
                 {/* Left: Visual Comparison */}
-                <div className="w-full md:w-1/2 p-8 border-r border-gray-100 flex flex-col items-center justify-center bg-gray-50/50">
+                <div className="w-full md:w-1/2 p-4 md:p-8 border-r border-gray-100 flex flex-col items-center justify-start bg-gray-50/50 overflow-y-auto custom-scrollbar">
                     <button onClick={onClose} className="absolute top-6 left-6 p-2 bg-white rounded-full shadow-md hover:scale-110 transition-transform md:hidden">✕</button>
 
                     <div className="w-full grid grid-cols-2 gap-4 mb-8">
