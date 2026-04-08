@@ -1725,29 +1725,41 @@ function DetailedComparison({ queryImage, selectedResult, searchResults, onClose
                                             </div>
                                         </div>
                                     )}
-
-                                    <div className="space-y-4 mt-6">
-                                        <div>
-                                            <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
-                                                <span>QUERY FEATURE</span>
-                                                <span>{queryColors ? `R:${queryColors.r}% G:${queryColors.g}% B:${queryColors.b}%` : 'N/A'}</span>
-                                            </div>
-                                            {queryColors && <ColorBar stats={queryColors} />}
-                                        </div>
-                                        <div className="flex justify-center py-1 opacity-20">
-                                            <span className="text-xl">↕</span>
-                                        </div>
-                                        <div>
-                                            <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
-                                                <span>TARGET FEATURE</span>
-                                                {targetColors && <span>R:{targetColors.r}% G:{targetColors.g}% B:{targetColors.b}%</span>}
-                                            </div>
-                                            {targetColors && <ColorBar stats={targetColors} />}
-                                        </div>
-                                    </div>
                                 </>
                             )}
                         </div>
+
+                        {/* Render Color Match for all algorithms EXCEPT TBIR */}
+                        {targetColors && selectedResult.type !== 'TBIR' && (
+                            <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mt-6">
+                                <div className="flex justify-between items-center mb-4">
+                                    <h4 className="text-sm font-bold text-gray-800 flex items-center gap-2">
+                                        🎨 Secondary Color Distribution Analysis
+                                    </h4>
+                                    <span className="text-[9px] text-gray-400 uppercase font-bold tracking-widest bg-gray-100 px-2 py-1 rounded-md">RGB Layout</span>
+                                </div>
+                                <div className="space-y-4">
+                                    <div>
+                                        <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
+                                            <span>QUERY ALIGNMENT PIXELS</span>
+                                            <span>{queryColors ? `R:${queryColors.r}% G:${queryColors.g}% B:${queryColors.b}%` : 'N/A'}</span>
+                                        </div>
+                                        {queryColors && <ColorBar stats={queryColors} />}
+                                    </div>
+                                    <div className="flex justify-center py-1 opacity-20 relative">
+                                        <div className="absolute inset-x-0 top-1/2 h-px bg-gray-300"></div>
+                                        <span className="text-xl bg-white px-2 relative z-10">↕</span>
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between text-[10px] font-bold text-gray-400 mb-1">
+                                            <span>TARGET MATCH PIXELS</span>
+                                            <span>R:{targetColors.r}% G:{targetColors.g}% B:{targetColors.b}%</span>
+                                        </div>
+                                        <ColorBar stats={targetColors} />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
 
