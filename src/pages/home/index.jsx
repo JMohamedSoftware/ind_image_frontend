@@ -1686,11 +1686,40 @@ function DetailedComparison({ queryImage, selectedResult, searchResults, onClose
                                                             </div>
                                                         </div>
                                                     )}
+                                                    
+                                                    {/* ✨ KEYPOINT FORENSIC MATCHES */}
+                                                    {selectedResult.educational_info.math_proof.visual_matches?.length > 0 && (
+                                                        <div className="pt-4 border-t border-white/5 space-y-2 mt-4 max-h-32 overflow-y-auto custom-scrollbar">
+                                                            <div className="flex justify-between items-center mb-2">
+                                                                <span className="text-[9px] font-black uppercase text-indigo-400 tracking-wider">Top Geometric Correspondences</span>
+                                                                <span className="text-[8px] bg-indigo-500/20 text-indigo-300 px-2 py-0.5 rounded">Scale & Rotation Invariant</span>
+                                                            </div>
+                                                            {selectedResult.educational_info.math_proof.visual_matches.slice(0, 5).map((match, idx) => (
+                                                                <div key={idx} className="flex justify-between items-center text-[10px] font-mono bg-slate-900/50 p-1.5 rounded border border-white/5">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-slate-500">P{idx+1}</span>
+                                                                        <span className="text-emerald-400">({Math.round(match.query.x)}, {Math.round(match.query.y)})</span>
+                                                                    </div>
+                                                                    <span className="text-slate-600">↔</span>
+                                                                    <div className="flex items-center gap-2">
+                                                                        <span className="text-indigo-400">({Math.round(match.target.x)}, {Math.round(match.target.y)})</span>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                            {selectedResult.educational_info.math_proof.visual_matches.length > 5 && (
+                                                                <p className="text-[8px] text-center text-slate-500 italic pt-1">
+                                                                    + {selectedResult.educational_info.math_proof.visual_matches.length - 5} more matching points confirmed.
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    )}
                                                 </div>
 
                                                 <div className="mt-6 pt-4 italic">
                                                     <p className="text-[9px] text-slate-500 leading-relaxed font-medium">
-                                                        Note for Professor: Final percentage is normalized from raw distance/similarity values. All calculations performed in float64 precision before display truncation.
+                                                        Note for Professor: Final percentage is normalized from raw distance/similarity values. 
+                                                        Vectors display neural weights/gradients, while Keypoints display structural layout angles.
+                                                        All calculations performed in float64 precision before display truncation.
                                                     </p>
                                                 </div>
                                             </div>
