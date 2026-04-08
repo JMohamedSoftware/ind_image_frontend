@@ -619,7 +619,7 @@ function FeatureRepresentationModal({ image, onClose }) {
     );
 }
 // ─── INDEX GALLERY ──────────────────────────────────────────────────────────
-function IndexGallery({ images, totalImages, onClear, algo, onSelectImage, onSearch, setQueryImage }) {
+function IndexGallery({ images, totalImages, onClear, algo, onSelectImage, onSearch, setQueryImage, isSearching }) {
     if (images.length === 0 && totalImages === 0) return null;
 
     const isTBIR = algo.type === 'TBIR';
@@ -1439,6 +1439,7 @@ const HomePage = () => {
                     onSelectImage={setSelectedLibraryImage}
                     onSearch={handleSearch}
                     setQueryImage={setQueryImage}
+                    isSearching={isSearching}
                 />
 
             </main>
@@ -1463,6 +1464,7 @@ const HomePage = () => {
                 <DetailedComparison
                     queryImage={queryImage || { filename: textQuery, algorithm: 'CLIP' }}
                     selectedResult={selectedDetailResult}
+                    searchResults={searchResults}
                     onClose={() => setSelectedDetailResult(null)}
                 />
             )}
@@ -1492,7 +1494,7 @@ function GlobalAnalysisWrapper() {
 }
 
 // ─── DETAILED COMPARISON (Vector Visualization) ───────────────────────────────
-function DetailedComparison({ queryImage, selectedResult, onClose }) {
+function DetailedComparison({ queryImage, selectedResult, searchResults, onClose }) {
     if (!selectedResult) return null;
 
     const queryColors = queryImage?.color_stats || (queryImage?.file ? { r: 33, g: 33, b: 33 } : null);
@@ -1542,7 +1544,7 @@ function DetailedComparison({ queryImage, selectedResult, onClose }) {
                                         </div>
                                     </div>
                                 </div>
-                            ) : (searchResults.results[0]?.cnn_label && (selectedResult.algorithm === 'CNN' || selectedResult.algorithm === 'CLIP')) ? (
+                            ) : (searchResults?.results?.[0]?.cnn_label && (selectedResult.algorithm === 'CNN' || selectedResult.algorithm === 'CLIP')) ? (
                                 <div className="p-5 bg-indigo-600 rounded-2xl shadow-xl border border-indigo-400 animate-in zoom-in duration-500 relative overflow-hidden group">
                                     <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-16 -mt-16 blur-2xl group-hover:bg-white/20 transition-all"></div>
                                     <div className="relative z-10">
@@ -1557,7 +1559,7 @@ function DetailedComparison({ queryImage, selectedResult, onClose }) {
                                         </div>
                                         <h5 className="text-[10px] font-bold text-indigo-100 uppercase tracking-widest mb-1">Detected Semantic Class:</h5>
                                         <p className="text-3xl font-black text-white tracking-tight">
-                                            {searchResults.results[0].cnn_label}
+                                            {searchResults?.results?.[0]?.cnn_label}
                                         </p>
                                         <p className="text-[10px] text-indigo-200 mt-2 italic font-medium">
                                             "The {selectedResult.algorithm} brain identifies this {selectedResult.algorithm === 'CLIP' ? 'concept' : 'object'} with high mathematical confidence."

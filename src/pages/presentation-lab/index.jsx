@@ -583,14 +583,18 @@ const PresentationLab = () => {
 
 // Global Wrapper to handle the event-driven analysis trigger
 function GlobalAnalysisWrapper() {
-    const [id, setId] = useState(null);
+    const [state, setState] = useState({ id: null, queryImage: null });
     useEffect(() => {
-        const handle = (e) => setId(e.detail);
+        const handle = (e) => setState(e.detail);
         window.addEventListener('openAnalysis', handle);
         return () => window.removeEventListener('openAnalysis', handle);
     }, []);
-    if (!id) return null;
-    return <AnalyticalDashboard imageId={id} onClose={() => setId(null)} />;
+    if (!state.id) return null;
+    return <AnalyticalDashboard 
+        imageId={state.id} 
+        queryImage={state.queryImage}
+        onClose={() => setState({ id: null, queryImage: null })} 
+    />;
 }
 
 export default PresentationLab;

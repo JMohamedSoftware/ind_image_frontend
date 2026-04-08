@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'components/ui/AppImage';
 import Icon from 'components/AppIcon';
 
@@ -218,52 +218,79 @@ const DetailedComparison = ({ queryImage, selectedResult, onClose }) => {
         </div>
     );
 
+    const queryRef = useRef(null);
+    const targetRef = useRef(null);
+    const [lineCoords, setLineCoords] = useState([]);
+
+    useEffect(() => {
+        if (forensicData?.matches?.length > 0 && queryRef.current && targetRef.current) {
+            const updateLines = () => {
+                const qRect = queryRef.current.getBoundingClientRect();
+                const tRect = targetRef.current.getBoundingClientRect();
+                const containerRect = queryRef.current.closest('.forensic-container').getBoundingClientRect();
+
+                const newLines = forensicData.matches.map(m => {
+                    // Map keypoints (assuming they are in pixels relative to original image)
+                    // Since the image is 'object-cover', we need to be careful.
+                    // Simplified: Assuming normalized coordinates for the demo if possible, 
+                    // or just using the image container relative matching.
+                    
+                    // For now, let's assume query_point/target_point are 0-100 percentages 
+                    // (I'll update the backend to return percentages or handle here)
+                    return {
+                        x1: qRect.left - containerRect.left + (m.query_point[0] / 100) * qRect.width,
+                        y1: qRect.top - containerRect.top + (m.query_point[1] / 100) * qRect.height,
+                        x2: tRect.left - containerRect.left + (m.target_point[0] / 100) * tRect.width,
+                        y2: tRect.top - containerRect.top + (m.target_point[1] / 100) * tRect.height
+                    };
+                });
+                setLineCoords(newLines);
+            };
+
+            updateLines();
+            window.addEventListener('resize', updateLines);
+            return () => window.removeEventListener('resize', updateLines);
+        }
+    }, [forensicData, activeTab]);
+
     const renderKeypointMatching = () => (
-        <div className="space-y-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        <div className="space-y-4 forensic-container relative">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 relative">
+                {/* SVG OVERLAY FOR LINES */}
+                <svg className="absolute inset-0 w-full h-full pointer-events-none z-20 overflow-visible">
+                    {lineCoords.map((line, i) => (
+                        <line 
+                            key={i} 
+                            x1={line.x1} y1={line.y1} 
+                            x2={line.x2} y2={line.y2} 
+                            stroke={i % 2 === 0 ? "rgba(251, 191, 36, 0.4)" : "rgba(16, 185, 129, 0.4)"}
+                            strokeWidth="1.5"
+                            className="match-line"
+                        />
+                    ))}
+                </svg>
+
                 <div className="space-y-2 relative">
-                    <p className="text-sm font-medium text-muted-foreground">Query Image</p>
-                    <div className="relative aspect-[4/3] bg-muted rounded-lg overflow-hidden border border-border" id="query-container">
+                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Query Viewport</p>
+                    <div ref={queryRef} className="relative aspect-[4/3] bg-black/40 rounded-3xl overflow-hidden border border-white/5 shadow-2xl group cursor-crosshair">
                         <Image
                             src={queryImage?.image}
                             alt={queryImage?.imageAlt}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-700"
                         />
-                        <div className="absolute inset-0 pointer-events-none">
-                            {(forensicData?.matches || []).map((m, i) => (
-                                <div
-                                    key={i}
-                                    className="absolute w-1 h-1 bg-yellow-400 rounded-full shadow-[0_0_5px_#fbbf24]"
-                                    style={{
-                                        left: `${m.query_point[0]}%`,
-                                        top: `${m.query_point[1]}%`
-                                    }}
-                                />
-                            ))}
-                        </div>
+                        <div className="absolute inset-0 bg-yellow-400/5 mix-blend-overlay" />
                     </div>
                 </div>
 
                 <div className="space-y-2 relative">
-                    <p className="text-sm font-medium text-muted-foreground">Target Match</p>
-                    <div className="relative aspect-[4/3] bg-muted rounded-lg overflow-hidden border border-border" id="target-container">
+                    <p className="text-[10px] font-black uppercase text-slate-500 tracking-widest">Target Forensic View</p>
+                    <div ref={targetRef} className="relative aspect-[4/3] bg-black/40 rounded-3xl overflow-hidden border border-white/5 shadow-2xl group cursor-crosshair">
                         <Image
                             src={selectedResult?.image}
                             alt={selectedResult?.imageAlt}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-700"
                         />
-                        <div className="absolute inset-0 pointer-events-none">
-                            {(forensicData?.matches || []).map((m, i) => (
-                                <div
-                                    key={i}
-                                    className="absolute w-1 h-1 bg-emerald-400 rounded-full shadow-[0_0_5px_#34d399]"
-                                    style={{
-                                        left: `${m.target_point[0]}%`,
-                                        top: `${m.target_point[1]}%`
-                                    }}
-                                />
-                            ))}
-                        </div>
+                        <div className="absolute inset-0 bg-emerald-400/5 mix-blend-overlay" />
                     </div>
                 </div>
             </div>
